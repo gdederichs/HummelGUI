@@ -154,7 +154,7 @@ class UpdatableSignal:
 
 def main():
     task = nidaqmx.Task()
-    task.ao_channels.add_ao_voltage_chan("Dev1/ao0")
+    task.ao_channels.add_ao_voltage_chan("SimDev/ao0")
     task.timing.cfg_samp_clk_timing(rate=util.sampling_rate, sample_mode=nidaqmx.constants.AcquisitionType.CONTINUOUS) # ATTENTION: USB-6216 does not support hardware timing
                                                                                                                         # timing must be set via software loop
 

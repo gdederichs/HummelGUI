@@ -93,9 +93,9 @@ Parameters for the main program
 ampl = 2
 freq = 3 #[Hz]
 duration = 10 #[s]
-sampling_rate = 100
+sampling_rate = 1000
 chunk_time = 1
 
 # plot visuals/terminal outputs?
-visuals = False
+visuals = True
 should_print  = True
