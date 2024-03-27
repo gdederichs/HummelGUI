@@ -8,67 +8,87 @@ from matplotlib import pyplot as plt
 import time
 import util
 
+device = "SimDev"
 
-class SignalSender(QObject): #for threading... need to look into this more in detail
-    finished = pyqtSignal()
-    progress = pyqtSignal(int)
-
-    def __init__(self, task, signal):
-        super().__init__()
-        self.task = task
-        self.signal = signal
-
-    def run(self): #is auto called by sender.start()
-        self.task.start()
-        self.task.write(self.signal)
-        self.task.stop()
-        self.finished.emit()
-
-
-
-
-def send(task, signal):
-    task.start()
-    task.write(signal)
-    task.stop()
-
-
-    #Trying threading:
-    """sender = SignalSender(task, signal)
-    sender.finished.connect(lambda:print("Signal sent")) 
-    sender.start()
-    sender.wait()"""
-
-def stop(task):
-    task.stop()
-
-def close(task):
-    task.close()
-
-app = QApplication([])
-
-window = QWidget()
-window.setWindowTitle("NIBS GUI")
-window.setGeometry(200, 200, 500, 400)
-
-send_btn = QPushButton("send signal", parent=window)
-stop_btn = QPushButton("stop", parent=window)
-close_btn = QPushButton("close", parent=window)
-stop_btn.move(0,50)
-close_btn.move(0,100)
-
-
-
-window.show()
 dt, signal = util.fct1(util.ampl, util.freq, util.duration, util.sampling_rate)
 
 task = nidaqmx.Task()
-task.ao_channels.add_ao_voltage_chan("Dev2/ao0")
+task.ao_channels.add_ao_voltage_chan(device+"/ao0")
+
+# Step 1: Create a worker class
+class Worker(QObject):
+    finished = pyqtSignal()
+    progress = pyqtSignal(int)
+
+    def __init__(self, task, signal, parent = None) -> None:
+        super().__init__(parent)
+        self.task = task
+        self.signal = signal
+
+    def sendSignal(self):
+        if device == "SimDev":
+            print("Output of virtual signal")
+            time.sleep(10)
+        else:
+            print("starting sig")
+            self.task.start()
+            self.task.write(self.signal)
+            self.task.stop()
+            print("finsiehd sig")
+            self.finished.emit()
 
 
-send_btn.clicked.connect(lambda:send(task,signal))
-stop_btn.clicked.connect(lambda:stop(task))
-close_btn.clicked.connect(lambda:close(task))
 
-app.aboutToQuit.connect(task.close)
+class Window(QMainWindow):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.clicksCount = 0
+        self.setupUi()
+
+    def stop(self, task):
+        print("stop button pressed")
+        task.stop()
+        print("stop called")
+
+    def close(self, task):
+        task.close()
+
+    def run_sendSignal(self):
+        self.thread = QThread()
+        self.worker = Worker(task,signal)
+        self.worker.moveToThread(self.thread)
+
+        self.thread.started.connect(self.worker.sendSignal)
+        self.thread.finished.connect(self.thread.deleteLater)
+
+        self.worker.finished.connect(self.thread.quit)
+        self.worker.finished.connect(self.worker.deleteLater)
+
+        self.thread.start()
+
+    def setupUi(self):
+        self.setWindowTitle("NIBS GUI")
+        self.setGeometry(200, 200, 500, 400)
+        self.centralWidget = QWidget()
+        self.setCentralWidget(self.centralWidget)
+        # Create and connect widgets
+        send_btn = QPushButton("send signal", self)
+        send_btn.clicked.connect(lambda:self.run_sendSignal())
+
+        stop_btn = QPushButton("stop", self)
+        stop_btn.clicked.connect(lambda:self.stop(task))
+
+        close_btn = QPushButton("close", self)
+        close_btn.clicked.connect(lambda:self.close(task))
+
+        stop_btn.move(0,50)
+        close_btn.move(0,100)
+
+
+
+app = QApplication(sys.argv)
+win = Window()
+win.show()
+
+app.aboutToQuit.connect(task.close())
 sys.exit(app.exec())
