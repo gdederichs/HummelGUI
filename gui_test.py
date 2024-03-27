@@ -7,6 +7,8 @@ import numpy as np
 from matplotlib import pyplot as plt
 import time
 import util
+import threading
+
 
 device = "SimDev"
 
@@ -29,6 +31,7 @@ class Worker(QObject):
         if device == "SimDev":
             print("Output of virtual signal")
             time.sleep(10)
+            print("done")
         else:
             print("starting sig")
             self.task.start()
@@ -45,6 +48,7 @@ class Window(QMainWindow):
         self.clicksCount = 0
         self.setupUi()
 
+
     def stop(self, task):
         print("stop button pressed")
         task.stop()
@@ -52,9 +56,11 @@ class Window(QMainWindow):
 
     def close(self, task):
         task.close()
+        
 
     def run_sendSignal(self):
         self.thread = QThread()
+
         self.worker = Worker(task,signal)
         self.worker.moveToThread(self.thread)
 
@@ -65,6 +71,7 @@ class Window(QMainWindow):
         self.worker.finished.connect(self.worker.deleteLater)
 
         self.thread.start()
+
 
     def setupUi(self):
         self.setWindowTitle("NIBS GUI")
@@ -90,5 +97,5 @@ app = QApplication(sys.argv)
 win = Window()
 win.show()
 
-app.aboutToQuit.connect(task.close())
+app.aboutToQuit.connect(task.close)
 sys.exit(app.exec())
