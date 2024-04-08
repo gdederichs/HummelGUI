@@ -55,8 +55,32 @@ def fct1(A,f,t,sampling_rate):
         tuple[list, list]
             the time points and the signal
         '''
-    dt=np.linspace(0,t,sampling_rate*t)
+    dt=np.linspace(0,t,int(sampling_rate*t))
     signal = A*np.sin(2*np.pi*f*dt)
+    return dt, signal
+
+
+def single_period(A,t,sampling_rate):
+    ''' Produces a single period of a sine wave
+        
+        Parameters
+        ----------
+        A : float
+            amplitude
+            
+        t : float
+            period
+
+        sampling_rate : float
+            sampling_rate to produce time points
+
+        Returns
+        -------
+        tuple[list, list]
+            the time points and the signal
+        '''
+    dt = np.linspace(0,t,int(sampling_rate*t))
+    signal = A*np.sin(2*np.pi/t*dt)
     return dt, signal
 
 
@@ -92,6 +116,7 @@ Parameters for the main program
 '''
 ampl = 2
 freq = 3 #[Hz]
+period = 1/freq
 duration = 10 #[s]
 sampling_rate = 1000
 chunk_time = 1

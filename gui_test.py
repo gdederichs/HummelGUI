@@ -17,7 +17,7 @@ dt, signal = util.fct1(util.ampl, util.freq, util.duration, util.sampling_rate)
 task = nidaqmx.Task()
 task.ao_channels.add_ao_voltage_chan(device+"/ao0")
 
-# Step 1: Create a worker class
+
 class Worker(QObject):
     finished = pyqtSignal()
     progress = pyqtSignal(int)
