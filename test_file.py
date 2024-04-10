@@ -8,7 +8,9 @@ from nidaqmx.constants import AcquisitionType
 
 #THIS FILE IS A SCRAP FILE FOR TESTING OF DIFFERENT CODE SNIPPETS, FUNCTIONS, ETC.
 #THERE SHOULD BE NO IMPORTANT CODE IN THIS FILE THAT HAS NOT BEEN IMPLEMENTED IN ANOTHER FILE
-
+a=np.asarray([1,2,3,4,5])
+b=np.asarray([3,4,3,4,3])
+print(b-a)
 
 """
 request_update = False

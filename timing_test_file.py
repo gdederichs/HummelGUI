@@ -21,12 +21,8 @@ with nidaqmx.Task() as task:
     task.ao_channels.add_ao_voltage_chan(device+"/ao0")
 
     task.timing.cfg_samp_clk_timing(rate=util.sampling_rate, sample_mode=AcquisitionType.FINITE, samps_per_chan=np.size(signal)) 
-    #SAMPLING RATE NOT EXACTLY UNDERSTOOD:
-    #correct frequency of signal is obtained but not the correct total duration
-    #by playing around with values: f_out = f_in*rate_cfg/rate_real and t_out = 1000/rate_cfg
-    #idea: samps_per_chan is set to 1000 default! --> simply specify number of samples in the signal
-    #can use this to write multiple periods: four x periods: samps_per_chan = x*np.size(signal)
-    #update: this works hehe
+    #can use this to write multiple periods: for x periods: samps_per_chan = x*np.size(signal)
+
 
 
     task.write(signal)

@@ -117,7 +117,7 @@ Parameters for the main program
 ampl = 2
 freq = 3 #[Hz]
 period = 1/freq
-duration = 10 #[s]
+duration = 5 #[s]
 sampling_rate = 1000
 chunk_time = 1
 
