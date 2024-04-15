@@ -8,8 +8,7 @@ from matplotlib import pyplot as plt
 import time
 import util
 
-
-device = "SimDev"
+device = "Dev4"
 signals = util.iTBS()
 
 with nidaqmx.Task() as task:
@@ -19,7 +18,46 @@ with nidaqmx.Task() as task:
 
     task.write(signals)
     task.start()
+
+    # update - artificial
     time.sleep(3)
+    task.stop()
+    signals = util.iTBS(cycle_f=10)
+    task.write(signals)
+    task.start()
+    # ------------------
+
     task.wait_until_done(inf)
+    
 
     print("done.")
+
+
+
+
+"""
+############ TO DO ############
+1) write documentation of functions
+2) write report 2
+3) implement the following
+general structure:
+def run():
+    all code to run the task
+    ...
+    ...
+    ...
+    while not task.is_task_done():
+        if trigger:
+            task.stop()
+            new_signal
+            run(task, new_signal)
+
+in main:
+
+with nidaqmx.Task() as task:
+    signals = ...
+    task.run(task,signals)
+    task.wait_until_done(inf) #as safety only
+
+    
+"""

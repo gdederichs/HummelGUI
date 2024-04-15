@@ -1,9 +1,12 @@
 import nidaqmx
 import threading
+import nidaqmx.task
 import numpy as np
 import util
 from matplotlib import pyplot as plt
 from nidaqmx.constants import AcquisitionType
+from nidaqmx.constants import WAIT_INFINITELY as inf
+import time
 
 
 #THIS FILE IS A SCRAP FILE FOR TESTING OF DIFFERENT CODE SNIPPETS, FUNCTIONS, ETC.
@@ -17,7 +20,6 @@ print(np.shape(signals[0]))
 print(np.shape(signals[1]))
 
 signals = util.iTBS(plot=True)
-
 """
 a=np.asarray([1,2,3,4,5])
 b=np.asarray([3,4,3,4,3])

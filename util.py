@@ -1,21 +1,63 @@
 import numpy as np
 from matplotlib import pyplot as plt
 
+'''
+Parameters for the main program
+'''
+#for iTBS  ---  time in seconds, frequency in Hz
+total_iTBS_time = 20 #time of entire signal; in s
+cycle_stim_time = 2 #time of a single stimulation phase
+cycle_break_time = 8 #break time after the stimulation phase
 
-def iTBS(total_time = 20,
-        stim_time = 2,
-        break_time = 8,
-        plot = False):
+carrier_f = 2000 #frequency of individual signals
+sampling_f = 100000 #matlab has dt = 0.01ms
+freq_of_pulse = 100 #frequency of envelope
+cycle_freq = 5 #within a stimulation phase, frequency of theta-bursts
+ampli1 = 0.5 #amplitude of signal 1
+ampli2 = 0.5 #amplitude of signal 2
+
+
+#general
+ampl = 2
+freq = 3 #[Hz]
+period = 1/freq
+duration = 5 #[s]
+sampling_rate = 1000
+chunk_time = 1
+
+# plot visuals/terminal outputs?
+visuals = True
+should_print  = True
+
+
+def iTBS(total_time = total_iTBS_time,
+         stim_time = cycle_stim_time,
+         break_time = cycle_break_time,
+         pulse_f = freq_of_pulse,
+         cycle_f = cycle_freq,
+         A1 = ampli1,
+         A2 = ampli2,
+         plot = False):
 
     no_cycles = np.floor(total_time/(stim_time+break_time)-0.001)
     dt = np.linspace(0,total_time,int(sampling_f*total_time))
 
     #creating signals
-    signals = createTI(duration=stim_time)
+    signals = createTI(pulse_f=pulse_f,
+                       cycle_f=cycle_f,
+                       duration=stim_time,
+                       A1=A1,
+                       A2=A2)
     signals = np.concatenate((signals, np.zeros((2,sampling_f*break_time))), axis=1)
     
     for i in np.arange(no_cycles):
-        signals = np.concatenate((signals, createTI(duration=stim_time)), axis=1)
+        new = createTI(pulse_f=pulse_f,
+                       cycle_f=cycle_f,
+                       duration=stim_time,
+                       A1=A1,
+                       A2=A2)
+        signals = np.concatenate((signals, new), axis=1)
+        
         if i!=no_cycles-1:
             signals = np.concatenate((signals, np.zeros((2,sampling_f*break_time))), axis=1)
         else: #last stim needs special care to correctly fit time
@@ -42,15 +84,16 @@ def iTBS(total_time = 20,
 
 
 
-def createTI(high_f = 2000,
-             pulse_f = 100,
-             duration = 2,
-             A1 = 0.5,
-             A2 = 0.5,
+def createTI(high_f = carrier_f,
+             pulse_f = freq_of_pulse,
+             cycle_f = cycle_freq,
+             duration = cycle_stim_time,
+             A1 = ampli1,
+             A2 = ampli2,
              plot = False):
     
-    cycle_t = 0.2
-    pulse_t = 0.03
+    cycle_t = 1/cycle_f #related to cycle frequency
+    pulse_t = 0.03 
     no_pulses = int(duration/cycle_t)
     dt = np.linspace(0,duration,int(sampling_f*duration))
     f1 = high_f
@@ -197,22 +240,3 @@ def fct2(A,f,t,sampling_rate):
     dt=np.linspace(0,t,sampling_rate*t)
     signal = A*np.cos(2*np.pi*f*dt)
     return dt, signal
-
-
-'''
-Parameters for the main program
-'''
-#for iTBS
-sampling_f = 100000 #matlab has dt = 0.01 (in ms); here: in 1/s = Hz
-
-#general
-ampl = 2
-freq = 3 #[Hz]
-period = 1/freq
-duration = 5 #[s]
-sampling_rate = 1000
-chunk_time = 1
-
-# plot visuals/terminal outputs?
-visuals = True
-should_print  = True
