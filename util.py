@@ -1,9 +1,14 @@
 import numpy as np
 from matplotlib import pyplot as plt
+from nidaqmx.constants import AcquisitionType
+from nidaqmx.constants import WAIT_INFINITELY as inf
 
 '''
 Parameters for the main program
 '''
+#for DAQ
+device = "Dev4"
+
 #for iTBS  ---  time in seconds, frequency in Hz
 total_iTBS_time = 20 #time of entire signal; in s
 cycle_stim_time = 2 #time of a single stimulation phase
@@ -69,7 +74,6 @@ def iTBS(total_time = total_iTBS_time,
             # or increase time to allow end of signal
             else:
                 dt = np.linspace(0, (sig_dim - 1) * (dt[1]-dt[0]), sig_dim)
-
     
     if plot:
         I1 = signals[0]
@@ -80,7 +84,7 @@ def iTBS(total_time = total_iTBS_time,
         #plt.plot(dt,I2)
         plt.show()
 
-    return signals
+    return dt, signals
 
 
 
@@ -127,6 +131,7 @@ def createTI(high_f = carrier_f,
         plt.show()
 
     return signals
+
 
 
 

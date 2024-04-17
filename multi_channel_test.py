@@ -8,23 +8,24 @@ from matplotlib import pyplot as plt
 import time
 import util
 
-device = "Dev4"
-signals = util.iTBS()
+device = util.device
+dt, signals = util.iTBS()
 
 with nidaqmx.Task() as task:
     task.ao_channels.add_ao_voltage_chan(device+"/ao0")
     task.ao_channels.add_ao_voltage_chan(device+"/ao1")
     task.timing.cfg_samp_clk_timing(rate=util.sampling_f, sample_mode=AcquisitionType.FINITE, samps_per_chan=np.shape(signals)[1])
 
+
     task.write(signals)
     task.start()
 
     # update - artificial
-    time.sleep(3)
+    time.sleep(1.5)
     task.stop()
-    signals = util.iTBS(cycle_f=10)
-    task.write(signals)
-    task.start()
+    #dt, signals = util.iTBS(cycle_f=10)
+    #task.write(signals)
+    #task.start()
     # ------------------
 
     task.wait_until_done(inf)
