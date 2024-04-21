@@ -40,6 +40,7 @@ def iTBS(total_time = total_iTBS_time,
          break_time = cycle_break_time,
          pulse_f = freq_of_pulse,
          cycle_f = cycle_freq,
+         carrier_f = carrier_f,
          A1 = ampli1,
          A2 = ampli2,
          plot = False):
@@ -48,7 +49,8 @@ def iTBS(total_time = total_iTBS_time,
     dt = np.linspace(0,total_time,int(sampling_f*total_time))
 
     #creating signals
-    signals = createTI(pulse_f=pulse_f,
+    signals = createTI(high_f=carrier_f,
+                       pulse_f=pulse_f,
                        cycle_f=cycle_f,
                        duration=stim_time,
                        A1=A1,
@@ -56,7 +58,8 @@ def iTBS(total_time = total_iTBS_time,
     signals = np.concatenate((signals, np.zeros((2,sampling_f*break_time))), axis=1)
     
     for i in np.arange(no_cycles):
-        new = createTI(pulse_f=pulse_f,
+        new = createTI(high_f=carrier_f,
+                       pulse_f=pulse_f,
                        cycle_f=cycle_f,
                        duration=stim_time,
                        A1=A1,
@@ -97,7 +100,7 @@ def createTI(high_f = carrier_f,
              plot = False):
     
     cycle_t = 1/cycle_f #related to cycle frequency
-    pulse_t = 0.03 
+    pulse_t = 3/pulse_f 
     no_pulses = int(duration/cycle_t)
     dt = np.linspace(0,duration,int(sampling_f*duration))
     f1 = high_f

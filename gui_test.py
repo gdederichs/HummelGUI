@@ -98,48 +98,54 @@ class MainWindow(QWidget):
         self.cycle_freq_edit = QLineEdit(str(util.cycle_freq))
         self.layout.addWidget(self.cycle_freq_edit,4,1)
 
+        # carrier frequency
+        self.layout.addWidget(QLabel('Carrier Frequency (Hz):'), 5, 0)
+        self.carrier_f_edit = QLineEdit(str(util.carrier_f))
+        self.layout.addWidget(self.carrier_f_edit,5,1)
+
+
         # amplitude of signal 1
-        self.layout.addWidget(QLabel('Amplitude 1 ():'), 5, 0)
+        self.layout.addWidget(QLabel('Amplitude 1 ():'), 6, 0)
         self.A1_edit = QLineEdit(str(util.ampli1))
-        self.layout.addWidget(self.A1_edit,5,1)
+        self.layout.addWidget(self.A1_edit,6,1)
 
         # amplitude of signal 2
-        self.layout.addWidget(QLabel('Amplitude 2 ():'), 6, 0)
+        self.layout.addWidget(QLabel('Amplitude 2 ():'), 7, 0)
         self.A2_edit = QLineEdit(str(util.ampli2))
-        self.layout.addWidget(self.A2_edit,6,1)
+        self.layout.addWidget(self.A2_edit,7,1)
 
 
         # BUTTON FIELDS
         # reset (default set in util.py)
         self.btn_reset_defaults = QPushButton("Reset to Default Values")
         self.btn_reset_defaults.clicked.connect(self.reset_defaults)
-        self.layout.addWidget(self.btn_reset_defaults,7,1)
+        self.layout.addWidget(self.btn_reset_defaults,8,1)
 
         # create signals/waveforms
         self.btn_create_signals = QPushButton("Create Waveform")
         self.btn_create_signals.clicked.connect(self.create_signals)
         self.btn_create_signals.clicked.connect(self.graph_waveform)
         self.btn_create_signals.clicked.connect(lambda: self.btn_run_stimulation.setEnabled(True)) #enable run button
-        self.layout.addWidget(self.btn_create_signals,8,0,1,2)
+        self.layout.addWidget(self.btn_create_signals,9,0,1,2)
 
         # run stimulation
         self.btn_run_stimulation = QPushButton("Run Stimulation")
         self.btn_run_stimulation.setEnabled(False)  #can't run unless signal is created
         self.btn_run_stimulation.clicked.connect(lambda: self.btn_run_stimulation.setEnabled(False))# disable button after run; forces to recreate signal before running
         self.btn_run_stimulation.clicked.connect(self.run_stimulation)
-        self.layout.addWidget(self.btn_run_stimulation,9,0,1,2)
+        self.layout.addWidget(self.btn_run_stimulation,10,0,1,2)
 
         # update stimulation
         self.btn_update = QPushButton("Update Stimulation")
         self.btn_update.setEnabled(False) #can't update unless running
         self.btn_update.clicked.connect(self.request_update)
-        self.layout.addWidget(self.btn_update,10,0)
+        self.layout.addWidget(self.btn_update,11,0)
 
         # stop stimulation
         self.btn_stop = QPushButton("Stop Stimulation")
         self.btn_stop.setEnabled(False) #can't stop unless running
         self.btn_stop.clicked.connect(self.request_stop)
-        self.layout.addWidget(self.btn_stop,10,1)
+        self.layout.addWidget(self.btn_stop,11,1)
 
 
         # GRAPH FIELDS
@@ -147,13 +153,13 @@ class MainWindow(QWidget):
         self.iTBS_signals = np.zeros((2,2))
         self.plot_waveform = pg.PlotWidget()
         self.plot_waveform.plot(self.dt, self.iTBS_signals[0]+self.iTBS_signals[1])
-        self.layout.addWidget(self.plot_waveform,0,2,13,1)
+        self.layout.addWidget(self.plot_waveform,0,2,14,1)
 
 
         # LABEL FIELDS
         self.run_status = QLabel("Ready")
         self.run_status.setStyleSheet("color: green; font-weight: bold;")
-        self.layout.addWidget(self.run_status, 11, 0)
+        self.layout.addWidget(self.run_status, 12, 0)
         
         self.update_request = False
         self.stop_request = False
@@ -169,6 +175,7 @@ class MainWindow(QWidget):
         self.cycle_break_time = int(self.cycle_break_time_edit.text())
         self.freq_of_pulse = int(self.freq_of_pulse_edit.text())
         self.cycle_freq = int(self.cycle_freq_edit.text())
+        self.carrier_f = int(self.carrier_f_edit.text())
         self.A1 = float(self.A1_edit.text())
         self.A2 = float(self.A2_edit.text())
         self.dt, self.iTBS_signals = util.iTBS(self.total_iTBS_time,
@@ -176,6 +183,7 @@ class MainWindow(QWidget):
                                      self.cycle_break_time,
                                      self.freq_of_pulse,
                                      self.cycle_freq,
+                                     self.carrier_f,
                                      self.A1, self.A2)
         
         
@@ -183,7 +191,7 @@ class MainWindow(QWidget):
         self.plot_waveform = pg.PlotWidget()
         self.plot_waveform.plotItem.setMouseEnabled(y=False) # Only allow zoom in X-axis
         self.plot_waveform.plot(self.dt, self.iTBS_signals[0]+self.iTBS_signals[1])
-        self.layout.addWidget(self.plot_waveform,0,2,13,1)
+        self.layout.addWidget(self.plot_waveform,0,2,14,1)
 
         
     def reset_defaults(self):
@@ -192,6 +200,7 @@ class MainWindow(QWidget):
         self.cycle_break_time_edit.setText(str(util.cycle_break_time))
         self.freq_of_pulse_edit.setText(str(util.freq_of_pulse))
         self.cycle_freq_edit.setText(str(util.cycle_freq))
+        self.carrier_f_edit.setText(str(util.carrier_f))
         self.A1_edit.setText(str(util.ampli1))
         self.A2_edit.setText(str(util.ampli2))
 
