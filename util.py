@@ -88,12 +88,13 @@ def iTBS(total_time = total_iTBS_time,
             I2b = A2*np.cos(2*np.pi*carrier_f*break_dt+np.pi)
             signals = np.concatenate((signals, np.vstack((I1b,I2b))), axis=1)
         else: #last stim needs special care to correctly fit time
-            dt_dim = np.size(dt)
+            dt_dim = np.size(dt)-int(sampling_f*ramp_down_time)
             sig_dim = np.shape(signals)[1]
             # fill in remaining time
             if dt_dim-sig_dim>0:
-                I1b = A1*np.cos(2*np.pi*carrier_f*break_dt)
-                I2b = A2*np.cos(2*np.pi*carrier_f*break_dt+np.pi)
+                last_break_dt = np.arange(0, dt_dim-sig_dim) * (dt[1]-dt[0])
+                I1b = A1*np.cos(2*np.pi*carrier_f*last_break_dt)
+                I2b = A2*np.cos(2*np.pi*carrier_f*last_break_dt+np.pi)
                 signals = np.concatenate((signals, np.vstack((I1b,I2b))), axis=1)
                 
 
