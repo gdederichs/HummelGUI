@@ -1,4 +1,5 @@
 import sys
+from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import (QApplication,
                             QLineEdit,
                             QLabel,
@@ -6,17 +7,15 @@ from PyQt6.QtWidgets import (QApplication,
                             QPushButton,
                             QCheckBox,
                             QGridLayout)
-
+from PyQt6.QtGui import (QPen,
+                         QColor)
 import pyqtgraph as pg
-from PyQt6.QtCore import pyqtSignal, Qt
 
 import nidaqmx
 from nidaqmx.constants import AcquisitionType
 from nidaqmx.constants import WAIT_INFINITELY as inf
 
 import numpy as np
-from matplotlib import pyplot as plt
-import time
 import util
 import threading
 
@@ -24,10 +23,17 @@ import threading
 class WorkerThread(threading.Thread):
     def __init__(self, parent):
         super().__init__()
-        self.parent = parent # access to main window's attributes/functions
+        self.parent = parent #access to main window's attributes/functions
 
     def update(self):
-        self.parent.update_request = False
+        #reset requests
+        if self.parent.update_request == True:
+            self.parent.update_request = False
+        if self.parent.stop_request == True:
+            self.parent.stop_request = False
+            self.parent.run_status.setText("Ramping Down")
+            self.parent.run_status.setStyleSheet("color: orange; font-weight: bold;")
+
         self.parent.send_signal()
 
     def run(self):
@@ -80,14 +86,14 @@ class MainWindow(QWidget):
         self.layout.addWidget(self.total_iTBS_time_edit,0,1)
 
         # time of stimulation in one cycle (train)
-        self.layout.addWidget(QLabel('Train Stimulation Duration (seconds):'), 1, 0)
-        self.train_stim_time_edit = QLineEdit(str(util.train_stim_time))
-        self.layout.addWidget(self.train_stim_time_edit,1,1)
+        self.layout.addWidget(QLabel('Ramp-up Time (seconds):'), 1, 0)
+        self.ramp_up_time_edit = QLineEdit(str(util.ramp_up_time))
+        self.layout.addWidget(self.ramp_up_time_edit,1,1)
 
         # time of break in on cycle (train)
-        self.layout.addWidget(QLabel('Train Break Duration (seconds):'), 2, 0)
-        self.train_break_time_edit = QLineEdit(str(util.train_break_time))
-        self.layout.addWidget(self.train_break_time_edit,2,1)
+        self.layout.addWidget(QLabel('Ramp-down Time (seconds):'), 2, 0)
+        self.ramp_down_time_edit = QLineEdit(str(util.ramp_down_time))
+        self.layout.addWidget(self.ramp_down_time_edit,2,1)
 
         # pulse frequency
         self.layout.addWidget(QLabel('Pulse Frequency (Hz):'), 3, 0)
@@ -123,8 +129,8 @@ class MainWindow(QWidget):
 
         # create signals/waveforms
         self.btn_create_signals = QPushButton("Create Waveform")
-        self.btn_create_signals.clicked.connect(self.create_signals)
-        self.btn_create_signals.clicked.connect(self.graph_waveform)
+        self.btn_create_signals.clicked.connect(lambda: self.create_signals(rampup=True))
+        self.btn_create_signals.clicked.connect(lambda: self.graph_waveform())
         self.btn_create_signals.clicked.connect(lambda: self.btn_run_stimulation.setEnabled(True)) #enable run button
         self.layout.addWidget(self.btn_create_signals,9,0,1,2)
 
@@ -182,7 +188,6 @@ class MainWindow(QWidget):
 
 
 
-
         # GRAPH FIELDS
         self.dt = [0,1]
         self.iTBS_signals = np.zeros((2,2))
@@ -208,10 +213,10 @@ class MainWindow(QWidget):
             self.exp_mode.setCheckState(Qt.CheckState.Checked)
 
     # FUNCTIONS
-    def create_signals(self):
+    def assign_values(self):
         self.total_iTBS_time = int(self.total_iTBS_time_edit.text())
-        self.train_stim_time = int(self.train_stim_time_edit.text())
-        self.train_break_time = int(self.train_break_time_edit.text())
+        self.train_stim_time = util.train_stim_time
+        self.train_break_time = util.train_break_time
         self.freq_of_pulse = int(self.freq_of_pulse_edit.text())
         self.burst_freq = int(self.burst_freq_edit.text())
         self.carrier_f = int(self.carrier_f_edit.text())
@@ -219,31 +224,52 @@ class MainWindow(QWidget):
         self.A_ratio = float(self.A_ratio_edit.text())
         self.A1 = self.A_sum/(1+self.A_ratio)
         self.A2 = self.A_ratio*self.A_sum/(1+self.A_ratio)
+        self.ramp_up_time = float(self.ramp_up_time_edit.text())
+        self.ramp_down_time = float(self.ramp_down_time_edit.text())
 
-
+    def create_signals(self, rampup=True):
+        self.assign_values()
         self.dt, self.iTBS_signals = util.iTBS(self.total_iTBS_time,
                                      self.train_stim_time,
                                      self.train_break_time,
                                      self.freq_of_pulse,
                                      self.burst_freq,
                                      self.carrier_f,
-                                     self.A1, self.A2)
+                                     self.A1, self.A2,
+                                     self.ramp_up_time,
+                                     self.ramp_down_time,
+                                     rampup=rampup)
+        
+    def create_stop_signal(self):
+        #named iTBS_signals for code, 
+        #but is simply high f signals,
+        #with decreasing amplitude and null envelope
+        self.iTBS_signals = util.ramp(direction="down",
+                                 carrier_f=self.carrier_f,
+                                 ramp_time=self.ramp_down_time,
+                                 A1_max=self.A1,
+                                 A2_max=self.A2)
         
         
-    def graph_waveform(self):
+    def graph_waveform(self, lines=True):
         if self.exp_mode.checkState() == Qt.CheckState.Unchecked:
             self.plot_waveform = pg.PlotWidget()
             self.plot_waveform.plotItem.setMouseEnabled(y=False) # Only allow zoom in X-axis
             self.plot_waveform.plot(self.dt,self.iTBS_signals[0]+self.iTBS_signals[1],)
             self.plot_waveform.getAxis("bottom").setLabel("Time", units="s")
             self.plot_waveform.getAxis("left").setLabel("Amplitude", units="mA")
+            if lines:
+                self.ramp_up_line = pg.InfiniteLine(pos=0, angle=90, movable=False)
+                self.ramp_down_line = pg.InfiniteLine(pos=self.total_iTBS_time, angle=90, movable=False)
+                self.plot_waveform.addItem(self.ramp_up_line)
+                self.plot_waveform.addItem(self.ramp_down_line)
             self.layout.addWidget(self.plot_waveform,0,2,14,1)
 
         
     def reset_defaults(self):
         self.total_iTBS_time_edit.setText(str(util.total_iTBS_time))
-        self.train_stim_time_edit.setText(str(util.train_stim_time))
-        self.train_break_time_edit.setText(str(util.train_break_time))
+        self.ramp_up_time_edit.setText(str(util.ramp_up_time))
+        self.ramp_down_time_edit.setText(str(util.ramp_down_time))
         self.freq_of_pulse_edit.setText(str(util.freq_of_pulse))
         self.burst_freq_edit.setText(str(util.burst_freq))
         self.carrier_f_edit.setText(str(util.carrier_f))
@@ -262,15 +288,20 @@ class MainWindow(QWidget):
         self.task.start()
         #trigger check
         while not self.task.is_task_done():
+            #update
             if self.update_request:
                 self.task.stop()
-                # create new waveform
-                self.create_signals()
+                # create new waveform without ramp-up
+                self.create_signals(rampup=False)
                 self.task.timing.cfg_samp_clk_timing(rate=util.sampling_f, sample_mode=AcquisitionType.FINITE, samps_per_chan=np.shape(self.iTBS_signals)[1])
                 self.worker_thread.update()
+            #stop
             if self.stop_request:
-                self.stop_request = False
-                self.task.stop() #task closed in worker thread
+                self.task.stop()
+                # new waveform is ramp-down
+                self.create_stop_signal()
+                self.task.timing.cfg_samp_clk_timing(rate=util.sampling_f, sample_mode=AcquisitionType.FINITE, samps_per_chan=np.shape(self.iTBS_signals)[1])
+                self.worker_thread.update()
 
 
     def request_update(self):
@@ -282,6 +313,7 @@ class MainWindow(QWidget):
 
 
     def check_exp_mode(self):
+        #turn on experiment mode
         if self.exp_mode.checkState() == Qt.CheckState.Checked:
             for widget in self.findChildren(QWidget):
                 if (widget != self.exp_mode and
@@ -293,6 +325,7 @@ class MainWindow(QWidget):
                     ): 
                     widget.setVisible(not widget.isVisible())
 
+        #back to testing mode
         if self.exp_mode.checkState() == Qt.CheckState.Unchecked:
             for widget in self.findChildren(QWidget):
                 if (widget != self.exp_mode and
@@ -303,6 +336,8 @@ class MainWindow(QWidget):
                     widget != self.btn_stop
                     ): 
                     widget.setVisible(not widget.isVisible())
+            self.assign_values()
+            self.graph_waveform(lines=False)
 
 
 
@@ -330,8 +365,9 @@ CURRENT ISSUES:
         DONE - 5) Add axis titles to graphing
         DONE - 6) Add ramp ups and ramp downs (No shift in carrier freqs, Amplitude gradually increase)
         DONE - 6b) Between trains: no shift in high stim, not simply 0
-        6c) Add ramp params to GUI, and add lines on graph after rampup and befor rampdown (for visu)
-        7) Add stop function with better functionality (update to ramp down)
+        DONE - 6c) Add ramp params to GUI, and add lines on graph after rampup and befor rampdown (for visu)
+        DONE - 7) Add stop function with better functionality (update to ramp down)
+        DONE - 7b) When calling update, do not want ramp up (keep ramp down, as it is needed for stim termination)
         8) Add menu to choose stimulation type
         9) Save file with all parameters used after stimulation
         STARTED - 10) Add experiment mode

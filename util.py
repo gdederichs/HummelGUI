@@ -51,15 +51,17 @@ def iTBS(total_time = total_iTBS_time,
          A2 = ampli2,
          ramp_up_time = ramp_up_time,
          ramp_down_time = ramp_down_time,
-         plot = False):
+         rampup = True):
 
     no_cycles = np.floor(total_time/(stim_time+break_time)-0.001)
-    dt = np.linspace(0,total_time+ramp_up_time+ramp_down_time, int(sampling_f*(total_time+ramp_up_time+ramp_down_time)))
+    dt = np.linspace(0,total_time+ramp_down_time, int(sampling_f*(total_time+ramp_down_time)))
     break_dt = np.linspace(0, break_time, int(sampling_f*break_time))
 
     #creating signals
     # ========== RAMP UP ==========
-    signals = ramp(direction="up", carrier_f=carrier_f, ramp_up_time=ramp_up_time, A1_max=A1, A2_max=A2)
+    if rampup:
+        dt = np.linspace(0,total_time+ramp_up_time+ramp_down_time, int(sampling_f*(total_time+ramp_up_time+ramp_down_time)))
+        signals = ramp(direction="up", carrier_f=carrier_f, ramp_time=ramp_up_time, A1_max=A1, A2_max=A2)
 
     # ======== MAIN SIGNAL ========
     first_sig = createTI(high_f=carrier_f,
@@ -68,7 +70,12 @@ def iTBS(total_time = total_iTBS_time,
                        duration=stim_time,
                        A1=A1,
                        A2=A2)
-    signals = np.concatenate((signals, first_sig), axis=1)
+    if rampup:
+        #concatenate to ramp
+        signals = np.concatenate((signals, first_sig), axis=1)
+    else:
+        #if no ramp, first_sig is the beginning of the signal
+        signals=first_sig
 
     I1b = A1*np.cos(2*np.pi*carrier_f*break_dt)
     I2b = A2*np.cos(2*np.pi*carrier_f*break_dt+np.pi)
@@ -87,7 +94,8 @@ def iTBS(total_time = total_iTBS_time,
             I1b = A1*np.cos(2*np.pi*carrier_f*break_dt)
             I2b = A2*np.cos(2*np.pi*carrier_f*break_dt+np.pi)
             signals = np.concatenate((signals, np.vstack((I1b,I2b))), axis=1)
-        else: #last stim needs special care to correctly fit time
+        else: 
+            #last stim needs special care to correctly fit time
             dt_dim = np.size(dt)-int(sampling_f*ramp_down_time)
             sig_dim = np.shape(signals)[1]
             # fill in remaining time
@@ -97,24 +105,17 @@ def iTBS(total_time = total_iTBS_time,
                 I2b = A2*np.cos(2*np.pi*carrier_f*last_break_dt+np.pi)
                 signals = np.concatenate((signals, np.vstack((I1b,I2b))), axis=1)
                 
-
     # ========= RAMP DOWN =========
-    down = ramp(direction="down", carrier_f=carrier_f, ramp_up_time=ramp_up_time, A1_max=A1, A2_max=A2)
+    down = ramp(direction="down", carrier_f=carrier_f, ramp_time=ramp_down_time, A1_max=A1, A2_max=A2)
     signals = np.concatenate((signals, down), axis=1)
     # add 100 zeros to offset spiking - update dt accordingly 
     signals = np.concatenate((signals, np.zeros((2,100))), axis=1)
     dt = np.concatenate((dt, dt[-1] + np.arange(0, 100) * dt[1]-dt[0]))
-    
-    if plot:
-        I1 = signals[0]
-        I2 = signals[1]
-        I = I1+I2
-        plt.plot(dt,I)
-        #plt.plot(dt,I1)
-        #plt.plot(dt,I2)
-        plt.show()
+    if rampup:
+        #shifts 0 to beginning of stim if ramp is included
+        dt -= ramp_up_time 
 
-    return dt, signals #need to update dt to get rampups and rampdowns in signal
+    return dt, signals
 
 
 
@@ -166,14 +167,14 @@ def createTI(high_f = carrier_f,
 
 def ramp(direction = "up",
         carrier_f = carrier_f,
-        ramp_up_time = ramp_up_time,
+        ramp_time = ramp_up_time,
         A1_max=ampli1,
         A2_max=ampli2):
 
-        dt = np.linspace(0,ramp_up_time,int(sampling_f*ramp_up_time))
+        dt = np.linspace(0,ramp_time,int(sampling_f*ramp_time))
 
-        ramp1 = np.linspace(0,A1_max,int(sampling_f*ramp_up_time))
-        ramp2 = np.linspace(0,A2_max,int(sampling_f*ramp_up_time))
+        ramp1 = np.linspace(0,A1_max,int(sampling_f*ramp_time))
+        ramp2 = np.linspace(0,A2_max,int(sampling_f*ramp_time))
         
         if direction=="down":
             ramp1 = ramp1[::-1]
