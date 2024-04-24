@@ -1,7 +1,4 @@
 import numpy as np
-from matplotlib import pyplot as plt
-from nidaqmx.constants import AcquisitionType
-from nidaqmx.constants import WAIT_INFINITELY as inf
 import util
 
 def iTBS(total_time = util.total_iTBS_time,
