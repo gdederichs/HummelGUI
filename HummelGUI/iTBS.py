@@ -15,47 +15,50 @@ def iTBS(total_time = util.total_iTBS_time,
          ramp_up_time = util.ramp_up_time,
          ramp_down_time = util.ramp_down_time,
          rampup = True):
-    ''' Create an Intermittent Theta Burst Stimulation (iTBS) signal
+    ''' 
+    Description
+    -----------
+    Create an Intermittent Theta Burst Stimulation (iTBS) signal
+    
+    Parameters
+    ----------
+    total_time : int
+        the time in seconds that the stimulation lasts (excluding ramp-up and ramp-down)
         
-        Parameters
-        ----------
-        total_time : int
-            the time in seconds that the stimulation lasts (excluding ramp-up and ramp-down)
-            
-        stim_time : int
-            the time in seconds of stimulation time within a train (should generally not be changed from the default of 2 seconds)
-            
-        break_time : int
-            the time in seconds with high frequency only, with null envelope, within a train (should generally not be changed from the default of 8 seconds)
-            
-        pulse_f : int
-            the frequency in Hz of the envelope (pulse)
+    stim_time : int
+        the time in seconds of stimulation time within a train (should generally not be changed from the default of 2 seconds)
+        
+    break_time : int
+        the time in seconds with high frequency only, with null envelope, within a train (should generally not be changed from the default of 8 seconds)
+        
+    pulse_f : int
+        the frequency in Hz of the envelope (pulse)
 
-        burst_f : int
-            the frequency in Hz at which theta-bursts (3 pulses) occur 
+    burst_f : int
+        the frequency in Hz at which theta-bursts (3 pulses) occur 
 
-        carrier_f : int
-            the frequency in Hz of the individual signals (ie. high frequency)
+    carrier_f : int
+        the frequency in Hz of the individual signals (ie. high frequency)
 
-        A1 : float
-            the amplitude in mA of signal 1
+    A1 : float
+        the amplitude in mA of signal 1
 
-        A2 : float
-            the amplitude in mA of signal 2
+    A2 : float
+        the amplitude in mA of signal 2
 
-        ramp_up_time : int
-            the time in seconds of amplitude increase of high frequency signals, before stimulation
+    ramp_up_time : int
+        the time in seconds of amplitude increase of high frequency signals, before stimulation
 
-        ramp_down_time : int
-            the time in seconds of amplitude decrease of high frequency signals, after stimulation
+    ramp_down_time : int
+        the time in seconds of amplitude decrease of high frequency signals, after stimulation
 
-        rampup : bool
-            True if rampup is to be included (eg. False for updating signal during stimulation)
+    rampup : bool
+        True if rampup is to be included (eg. False for updating signal during stimulation)
 
-        Returns
-        -------
-        tuple[np.array, np.array]
-            the time points and the signals (eg. signal 1 is signals[0])
+    Returns
+    -------
+    tuple[np.array, np.array]
+        the time points and the signals (eg. signal 1 is signals[0])
     '''
     no_cycles = np.floor(total_time/(stim_time+break_time)-0.001)
     dt = np.linspace(0,total_time+ramp_down_time, int(util.sampling_f*(total_time+ramp_down_time)))

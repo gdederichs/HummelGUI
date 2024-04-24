@@ -4,6 +4,8 @@ from nidaqmx.constants import AcquisitionType
 from nidaqmx.constants import WAIT_INFINITELY as inf
 
 '''
+Description
+-----------
 Deafult parameters for the main user interface
 '''
 # Defaults for GUI
@@ -40,6 +42,8 @@ def createTI(high_f = carrier_f,
              A1 = ampli1,
              A2 = ampli2):
     """
+    Description
+    -----------
     Creats two signals for creating theta-bursts when summed
     
     Parameters
@@ -99,6 +103,8 @@ def ramp(direction = "up",
         A1_max=ampli1,
         A2_max=ampli2):
         """
+        Description
+        -----------
         Creates signals with no temporal interference, with linearly increasing/decreasing amplitudes (eg. notably used to start and finish stimulations)
         
         Parameters
