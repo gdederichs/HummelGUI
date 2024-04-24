@@ -5,7 +5,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 
 import time
-import util
+import HummelGUI.util as util
 
 #Parameters
 device = "SimDev"

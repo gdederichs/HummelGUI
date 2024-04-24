@@ -3,7 +3,7 @@ import nidaqmx.task
 import numpy as np
 from matplotlib import pyplot as plt
 import time
-import util
+import HummelGUI.util as util
 import threading
 
 #TESTS: 

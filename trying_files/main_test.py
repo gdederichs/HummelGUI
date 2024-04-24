@@ -2,7 +2,7 @@ import nidaqmx
 import numpy as np
 from matplotlib import pyplot as plt
 import time
-import util
+import HummelGUI.util as util
 
 
  #TO DO:     DONE - 1. function to subdivide signal into small portions

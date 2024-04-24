@@ -5,7 +5,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 
 import time
-import util
+import HummelGUI.util as util
 
 ######## USB 6216 does not support hardware timing via python/nidaqmx. ############
 

@@ -2,7 +2,7 @@ import nidaqmx
 import threading
 import nidaqmx.task
 import numpy as np
-import util
+import HummelGUI.util as util
 from matplotlib import pyplot as plt
 from nidaqmx.constants import AcquisitionType
 from nidaqmx.constants import WAIT_INFINITELY as inf

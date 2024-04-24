@@ -6,7 +6,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 
 import time
-import util
+import HummelGUI.util as util
 
 device = util.device
 dt, signals = util.iTBS()

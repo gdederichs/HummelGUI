@@ -1,17 +1,12 @@
-import sys
-import csv
 import time
 import os
 from PyQt6.QtCore import Qt
-from PyQt6.QtWidgets import (QApplication,
-                            QLineEdit,
+from PyQt6.QtWidgets import (QLineEdit,
                             QLabel,
                             QWidget,
                             QPushButton,
                             QCheckBox,
                             QGridLayout)
-from PyQt6.QtGui import (QPen,
-                         QColor)
 import pyqtgraph as pg
 
 import nidaqmx
@@ -19,7 +14,7 @@ from nidaqmx.constants import AcquisitionType
 from nidaqmx.constants import WAIT_INFINITELY as inf
 
 import numpy as np
-import util
+import HummelGUI.util as util
 import threading
 
 
@@ -390,14 +385,6 @@ class MainWindow(QWidget):
 
             
 
-
-
-
-
-# RUN APPLICATION
-app = QApplication(sys.argv)
-window = MainWindow()
-sys.exit(app.exec())
 
 
 """
