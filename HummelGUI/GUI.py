@@ -14,7 +14,8 @@ from nidaqmx.constants import AcquisitionType
 from nidaqmx.constants import WAIT_INFINITELY as inf
 
 import numpy as np
-import HummelGUI.util as util
+import util
+import iTBS
 import threading
 
 
@@ -67,7 +68,7 @@ class WorkerThread(threading.Thread):
         self.parent.run_status.setStyleSheet("color: green; font-weight: bold;")
 
         # save parameters of experiment to csv
-        self.parent.save_params("test")
+        self.parent.save_params(util.save_filename)
 
 
 class MainWindow(QWidget):
@@ -236,7 +237,7 @@ class MainWindow(QWidget):
 
     def create_signals(self, rampup=True):
         self.assign_values()
-        self.dt, self.iTBS_signals = util.iTBS(self.total_iTBS_time,
+        self.dt, self.iTBS_signals = iTBS.iTBS(self.total_iTBS_time,
                                      self.train_stim_time,
                                      self.train_break_time,
                                      self.freq_of_pulse,
