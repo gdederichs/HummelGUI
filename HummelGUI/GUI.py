@@ -18,74 +18,33 @@ import util
 import iTBS
 import threading
 
-
-class WorkerThread(threading.Thread):
-    def __init__(self, parent):
-        super().__init__()
-        self.parent = parent #access to main window's attributes/functions
-
-    def update(self):
-        #reset requests
-        if self.parent.update_request == True:
-            self.parent.update_request = False
-        if self.parent.stop_request == True:
-            self.parent.stop_request = False
-            self.parent.run_status.setText("Ramping Down")
-            self.parent.run_status.setStyleSheet("color: orange; font-weight: bold;")
-
-        self.parent.send_signal()
-
-    def run(self):
-        # status labels for GUI
-        self.parent.run_status.setText("Stimulation Ongoing")
-        self.parent.run_status.setStyleSheet("color: red; font-weight: bold;")
-
-        # handle button enabling/disabling while running
-        self.parent.btn_update.setEnabled(True) 
-        self.parent.btn_stop.setEnabled(True)
-        self.parent.btn_create_signals.setEnabled(False) #while running, update() handles this
-
-        # task handling/settings
-        self.parent.task = nidaqmx.Task()
-        self.parent.task.ao_channels.add_ao_voltage_chan(util.device+"/ao0")
-        self.parent.task.ao_channels.add_ao_voltage_chan(util.device+"/ao1")
-        self.parent.task.timing.cfg_samp_clk_timing(rate=util.sampling_f, sample_mode=AcquisitionType.FINITE, samps_per_chan=np.shape(self.parent.iTBS_signals)[1])
-
-        # write signals to DAQ
-        self.parent.send_signal()
-
-        # task closing handling
-        self.parent.task.wait_until_done(inf)
-        self.parent.task.close()
-
-        # handle button enabling/disabling after run
-        self.parent.btn_update.setEnabled(False)
-        self.parent.btn_stop.setEnabled(False)
-        self.parent.btn_create_signals.setEnabled(True) 
-
-        # status labels
-        self.parent.run_status.setText("Ready")
-        self.parent.run_status.setStyleSheet("color: green; font-weight: bold;")
-
-        # save parameters of experiment to csv
-        self.parent.save_params(util.save_filename)
-
-
 class MainWindow(QWidget):
+    """
+    Description
+    -----------
+    Main GUI window. Handles all events linked to the GUI, notably storing all parameters and functions necessary to run
+    """
     def __init__(self, *args, **kwargs):
+        """
+        Description
+        -----------
+        Initialise main window of the GUI.
+        The main GUI window handles all events linked to the GUI, 
+        notably storing all parameters and functions necessary for NIBS
+        """
         super().__init__(*args, **kwargs)
 
-        # visual settings
+        # Visual settings
         self.setWindowTitle('iTBS Interface')
         self.resize(800,0)
         self.layout = QGridLayout()
 
-        # state settings
+        # State settings
         self.update_request = False
         self.stop_request = False
 
 
-        # VALUE FIELDS
+        # ======== VALUE FIELDS ========
         # total stimulation time
         self.layout.addWidget(QLabel('Total Duration (seconds):'), 0, 0)
         self.total_iTBS_time_edit = QLineEdit(str(util.total_iTBS_time))
@@ -127,7 +86,7 @@ class MainWindow(QWidget):
         self.layout.addWidget(self.A_ratio_edit,7,1)
 
 
-        # BUTTON FIELDS
+        # ======== BUTTON FIELDS ========
         # reset (default set in util.py)
         self.btn_reset_defaults = QPushButton("Reset to Default Values")
         self.btn_reset_defaults.clicked.connect(self.reset_defaults)
@@ -159,9 +118,10 @@ class MainWindow(QWidget):
         self.btn_stop.clicked.connect(self.request_stop)
         self.layout.addWidget(self.btn_stop,11,1)
 
-        # WIDGETS FOR EXPERIMENT MODE (BLIND)
-        # experiment mode toggle
-        self.exp_mode = QCheckBox('Experiment Mode')
+
+        # ======== BLIND MODE ========
+        # blind mode toggle
+        self.exp_mode = QCheckBox('Blind Mode')
         self.layout.addWidget(self.exp_mode,12,1)
         self.exp_mode.stateChanged.connect(self.check_exp_mode)
 
@@ -197,8 +157,7 @@ class MainWindow(QWidget):
         self.layout.addWidget(self.box_save,13,1)       
 
 
-
-        # GRAPH FIELDS
+        # ======== GRAPH FIELDS ========
         self.dt = [0,1]
         self.iTBS_signals = np.zeros((2,2))
         self.plot_waveform = pg.PlotWidget()
@@ -208,20 +167,28 @@ class MainWindow(QWidget):
         self.layout.addWidget(self.plot_waveform,0,2,14,1)
 
 
-        # LABEL FIELDS
+        # ======== LABEL FIELDS ========
         self.run_status = QLabel("Ready")
         self.run_status.setStyleSheet("color: green; font-weight: bold;")
         self.layout.addWidget(self.run_status, 12, 0)
 
 
+        # ======== APPLY LAYOUT ========
         self.setLayout(self.layout)
         self.show()
         # choose which window to open on start
-        if util.default_mode=="Experiment":
+        if util.default_mode=="Blind":
             self.exp_mode.setCheckState(Qt.CheckState.Checked)
+
+
 
     # FUNCTIONS
     def assign_values(self):
+        """
+        Description
+        -----------
+        Read values from GUI fields and store them
+        """
         self.total_iTBS_time = int(self.total_iTBS_time_edit.text())
         self.train_stim_time = util.train_stim_time
         self.train_break_time = util.train_break_time
@@ -236,6 +203,11 @@ class MainWindow(QWidget):
         self.ramp_down_time = float(self.ramp_down_time_edit.text())
 
     def create_signals(self, rampup=True):
+        """
+        Description
+        -----------
+        Creates signals from GUI values (calls assign_values() before running), and stores signals
+        """
         self.assign_values()
         self.dt, self.iTBS_signals = iTBS.iTBS(self.total_iTBS_time,
                                      self.train_stim_time,
@@ -249,6 +221,11 @@ class MainWindow(QWidget):
                                      rampup=rampup)
         
     def create_stop_signal(self):
+        """
+        Description
+        -----------
+        Creates a ramp down signal with null envelope
+        """
         #named iTBS_signals for code, 
         #but is simply high f signals,
         #with decreasing amplitude and null envelope
@@ -260,21 +237,35 @@ class MainWindow(QWidget):
         
         
     def graph_waveform(self, lines=True):
+        """
+        Description
+        -----------
+        Plot the sum of signals stored in GUI and shows the result in a widget
+        """
+        #only run if mode is not blind
         if self.exp_mode.checkState() == Qt.CheckState.Unchecked:
             self.plot_waveform = pg.PlotWidget()
             self.plot_waveform.plotItem.setMouseEnabled(y=False) # Only allow zoom in X-axis
             self.plot_waveform.plot(self.dt,self.iTBS_signals[0]+self.iTBS_signals[1],)
             self.plot_waveform.getAxis("bottom").setLabel("Time", units="s")
             self.plot_waveform.getAxis("left").setLabel("Amplitude", units="mA")
+
+            #plot lines surrounding main signal (exclude ramps)
             if lines:
                 self.ramp_up_line = pg.InfiniteLine(pos=0, angle=90, movable=False)
                 self.ramp_down_line = pg.InfiniteLine(pos=self.total_iTBS_time, angle=90, movable=False)
                 self.plot_waveform.addItem(self.ramp_up_line)
                 self.plot_waveform.addItem(self.ramp_down_line)
+
             self.layout.addWidget(self.plot_waveform,0,2,14,1)
 
         
     def reset_defaults(self):
+        """
+        Description
+        -----------
+        Reset all GUI fields to default values of util.py
+        """
         self.total_iTBS_time_edit.setText(str(util.total_iTBS_time))
         self.ramp_up_time_edit.setText(str(util.ramp_up_time))
         self.ramp_down_time_edit.setText(str(util.ramp_down_time))
@@ -286,42 +277,64 @@ class MainWindow(QWidget):
 
 
     def run_stimulation(self):
-        # start the worker thread
+        """
+        Description
+        -----------
+        Triggers the start of the stimulation by starting worker thread
+        """
         self.worker_thread = WorkerThread(self)
         self.worker_thread.start()
 
 
     def send_signal(self):
+        """
+        Description
+        -----------
+        Sends signal to DAQ, usually called by worker thread to avoid GUI freezing
+        """
         self.task.write(self.iTBS_signals)
         self.task.start()
-        #trigger check
+        # continuously checks for update or stop request while task is running
         while not self.task.is_task_done():
-            #update
             if self.update_request:
-                self.task.stop()
                 # create new waveform without ramp-up
+                self.task.stop()
                 self.create_signals(rampup=False)
                 self.task.timing.cfg_samp_clk_timing(rate=util.sampling_f, sample_mode=AcquisitionType.FINITE, samps_per_chan=np.shape(self.iTBS_signals)[1])
                 self.worker_thread.update()
-            #stop
             if self.stop_request:
-                self.task.stop()
                 # new waveform is ramp-down
+                self.task.stop()
                 self.create_stop_signal()
                 self.task.timing.cfg_samp_clk_timing(rate=util.sampling_f, sample_mode=AcquisitionType.FINITE, samps_per_chan=np.shape(self.iTBS_signals)[1])
                 self.worker_thread.update()
 
 
     def request_update(self):
+        """
+        Description
+        -----------
+        Changes the update request to True
+        """
         self.update_request = True
 
 
     def request_stop(self):
+        """
+        Description
+        -----------
+        Changes the stop request to True
+        """
         self.stop_request = True
 
 
     def check_exp_mode(self):
-        #turn on experiment mode
+        """
+        Description
+        -----------
+        Toggles GUI widgets between Blind mode (=exp_mode; =experiment mode) and Testing mode
+        """
+        #turn on blind mode
         if self.exp_mode.checkState() == Qt.CheckState.Checked:
             for widget in self.findChildren(QWidget):
                 # widgets that do not change
@@ -352,13 +365,28 @@ class MainWindow(QWidget):
                 # widgets present in blind mode only
                 if (widget == self.box_save):
                     widget.setVisible(False)
+
+            # recall graphing to show signals in Testing mode        
             self.assign_values()
             self.graph_waveform(lines=False)
 
     def save_params(self, file_name):
+        """
+        Description
+        -----------
+        Handles saving of parameters to a CSV file at the end of a stimulation.
+        A directory called "parameter_history" is created in the working directory.
+        The file is created inside "parameter_history".
+        If the file already exists in "parameter_history", new data are appended to the end of the existing file, without overwriting.
+
+        Parameters
+        ----------
+        file_name : string
+            name of the file to save data
+        """
         #only save if box is checked
         if self.box_save.checkState() == Qt.CheckState.Checked:
-            directory = "stim_params"
+            directory = "parameter_history"
             parent_dir = os.getcwd()
             path = os.path.join(parent_dir, directory) 
 
@@ -384,9 +412,76 @@ class MainWindow(QWidget):
                 file.write("\n")
 
 
+
+
+class WorkerThread(threading.Thread):
+    """
+    Description
+    -----------
+    Worker thread works in parallel to GUI to execute long code, such as running or updating tasks
+    """
+    def __init__(self, parent):
+        super().__init__()
+        self.parent = parent #access to main window's attributes/functions
+
+    def update(self):
+        """
+        Description
+        -----------
+        Run the update triggered by parent. Notably resets request values and sends new signal to DAQ
+        """
+        #reset requests
+        if self.parent.update_request == True:
+            self.parent.update_request = False
+        if self.parent.stop_request == True:
+            self.parent.stop_request = False
+            self.parent.run_status.setText("Ramping Down")
+            self.parent.run_status.setStyleSheet("color: orange; font-weight: bold;")
+
+        self.parent.send_signal()
+
+    def run(self):
+        """
+        Description
+        -----------
+        Run and send signals to DAQ, as triggered by parent.
+        """
+        # change status labels for GUI
+        self.parent.run_status.setText("Stimulation Ongoing")
+        self.parent.run_status.setStyleSheet("color: red; font-weight: bold;")
+
+        # handle button enabling/disabling while running
+        self.parent.btn_update.setEnabled(True) 
+        self.parent.btn_stop.setEnabled(True)
+        self.parent.btn_create_signals.setEnabled(False) #once running, update() handles this
+
+        # task handling/settings
+        self.parent.task = nidaqmx.Task()
+        self.parent.task.ao_channels.add_ao_voltage_chan(util.device+"/ao0")
+        self.parent.task.ao_channels.add_ao_voltage_chan(util.device+"/ao1")
+        self.parent.task.timing.cfg_samp_clk_timing(rate=util.sampling_f, sample_mode=AcquisitionType.FINITE, samps_per_chan=np.shape(self.parent.iTBS_signals)[1])
+
+        # write signals to DAQ
+        self.parent.send_signal()
+
+        # task closing handling
+        self.parent.task.wait_until_done(inf)
+        self.parent.task.close()
+
+        # handle button enabling/disabling after run
+        self.parent.btn_update.setEnabled(False)
+        self.parent.btn_stop.setEnabled(False)
+        self.parent.btn_create_signals.setEnabled(True) 
+
+        # reset status labels
+        self.parent.run_status.setText("Ready")
+        self.parent.run_status.setStyleSheet("color: green; font-weight: bold;")
+
+        # save parameters of experiment to csv
+        self.parent.save_params(util.save_filename)
+
+
             
-
-
 
 """
 CURRENT ISSUES:
@@ -410,7 +505,7 @@ CURRENT ISSUES:
         DONE - 7b) When calling update, do not want ramp up (keep ramp down, as it is needed for stim termination)
         8) Add menu to choose stimulation type
         DONE - 9) Save file with all parameters used after stimulation
-        STARTED - 10) Add experiment mode
+        STARTED - 10) Add blind mode
                 ->need to add reading from excel data if exp mode.
                     ->which data are stored in excel file?
         11) Trigger

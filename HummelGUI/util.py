@@ -7,7 +7,7 @@ from nidaqmx.constants import WAIT_INFINITELY as inf
 Deafult parameters for the main user interface
 '''
 # Defaults for GUI
-default_mode = "Experiment" #in experiment mode, GUI is blind (should be "Experiment" or "Settings")
+default_mode = "Blind" #in blind mode, GUI is blind (should be "Blind" or "Settings")
 
 # Defaults for DAQ
 device = "Dev4"
