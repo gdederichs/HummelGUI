@@ -15,12 +15,52 @@ def iTBS(total_time = util.total_iTBS_time,
          ramp_up_time = util.ramp_up_time,
          ramp_down_time = util.ramp_down_time,
          rampup = True):
+    ''' Create an Intermittent Theta Burst Stimulation (iTBS) signal
+        
+        Parameters
+        ----------
+        total_time : int
+            the time in seconds that the stimulation lasts (excluding ramp-up and ramp-down)
+            
+        stim_time : int
+            the time in seconds of stimulation time within a train (should generally not be changed from the default of 2 seconds)
+            
+        break_time : int
+            the time in seconds with high frequency only, with null envelope, within a train (should generally not be changed from the default of 8 seconds)
+            
+        pulse_f : int
+            the frequency in Hz of the envelope (pulse)
 
+        burst_f : int
+            the frequency in Hz at which bursts (3 pulses) occur 
+
+        carrier_f : int
+            the frequency in Hz of the individual signals (ie. high frequency)
+
+        A1 : float
+            the amplitude of signal 1
+
+        A2 : float
+            the amplitude of signal 2
+
+        ramp_up_time : int
+            the time in seconds of amplitude increase of high frequency signals, before stimulation
+
+        ramp_down_time : int
+            the time in seconds of amplitude decrease of high frequency signals, after stimulation
+
+        rampup : bool
+            True if rampup is to be included (eg. False for updating signal during stimulation)
+
+        Returns
+        -------
+        tuple[np.array, np.array]
+            the time points and the signals (eg. signal 1 is signals[0])
+    '''
     no_cycles = np.floor(total_time/(stim_time+break_time)-0.001)
     dt = np.linspace(0,total_time+ramp_down_time, int(util.sampling_f*(total_time+ramp_down_time)))
     break_dt = np.linspace(0, break_time, int(util.sampling_f*break_time))
 
-    #creating signals
     # ========== RAMP UP ==========
     if rampup:
         dt = np.linspace(0,total_time+ramp_up_time+ramp_down_time, int(util.sampling_f*(total_time+ramp_up_time+ramp_down_time)))
@@ -40,11 +80,14 @@ def iTBS(total_time = util.total_iTBS_time,
         #if no ramp, first_sig is the beginning of the signal
         signals=first_sig
 
+    #break has no difference in carrier frequencies
     I1b = A1*np.cos(2*np.pi*carrier_f*break_dt)
     I2b = A2*np.cos(2*np.pi*carrier_f*break_dt+np.pi)
     signals = np.concatenate((signals, np.vstack((I1b,I2b))), axis=1)
     
+    #remaining cycles
     for i in np.arange(no_cycles):
+        #stim time
         new = util.createTI(high_f=carrier_f,
                        pulse_f=pulse_f,
                        burst_f=burst_f,
@@ -53,12 +96,13 @@ def iTBS(total_time = util.total_iTBS_time,
                        A2=A2)
         signals = np.concatenate((signals, new), axis=1)
         
+        #break time
         if i!=no_cycles-1:
             I1b = A1*np.cos(2*np.pi*carrier_f*break_dt)
             I2b = A2*np.cos(2*np.pi*carrier_f*break_dt+np.pi)
-            signals = np.concatenate((signals, np.vstack((I1b,I2b))), axis=1)
+            signals = np.concatenate((signals, np.vstack((I1b,I2b))), axis=1)  
         else: 
-            #last stim needs special care to correctly fit time
+            #last cycle needs special care to correctly fit time  
             dt_dim = np.size(dt)-int(util.sampling_f*ramp_down_time)
             sig_dim = np.shape(signals)[1]
             # fill in remaining time
@@ -71,11 +115,13 @@ def iTBS(total_time = util.total_iTBS_time,
     # ========= RAMP DOWN =========
     down = util.ramp(direction="down", carrier_f=carrier_f, ramp_time=ramp_down_time, A1_max=A1, A2_max=A2)
     signals = np.concatenate((signals, down), axis=1)
-    # add 100 zeros to offset spiking - update dt accordingly 
+    # add 100 zeros to offset spiking and update dt accordingly 
     signals = np.concatenate((signals, np.zeros((2,100))), axis=1)
     dt = np.concatenate((dt, dt[-1] + np.arange(0, 100) * dt[1]-dt[0]))
+    
+    #shifts 0 to beginning of stim if ramp is included
     if rampup:
-        #shifts 0 to beginning of stim if ramp is included
         dt -= ramp_up_time 
+
 
     return dt, signals

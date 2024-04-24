@@ -7,9 +7,10 @@ from matplotlib import pyplot as plt
 
 import time
 import HummelGUI.util as util
+import HummelGUI.iTBS as iTBS
 
 device = util.device
-dt, signals = util.iTBS()
+dt, signals = iTBS.iTBS()
 
 with nidaqmx.Task() as task:
     task.ao_channels.add_ao_voltage_chan(device+"/ao0")
@@ -23,7 +24,7 @@ with nidaqmx.Task() as task:
     # update - artificial
     time.sleep(1.5)
     task.stop()
-    #dt, signals = util.iTBS(cycle_f=10)
+    #dt, signals = iTBS.iTBS(cycle_f=10)
     #task.write(signals)
     #task.start()
     # ------------------
