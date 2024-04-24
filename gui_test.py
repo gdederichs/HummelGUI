@@ -1,4 +1,7 @@
 import sys
+import csv
+import time
+import os
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import (QApplication,
                             QLineEdit,
@@ -68,6 +71,9 @@ class WorkerThread(threading.Thread):
         self.parent.run_status.setText("Ready")
         self.parent.run_status.setStyleSheet("color: green; font-weight: bold;")
 
+        # save parameters of experiment to csv
+        self.parent.save_params("test")
+
 
 class MainWindow(QWidget):
     def __init__(self, *args, **kwargs):
@@ -77,6 +83,10 @@ class MainWindow(QWidget):
         self.setWindowTitle('iTBS Interface')
         self.resize(800,0)
         self.layout = QGridLayout()
+
+        # state settings
+        self.update_request = False
+        self.stop_request = False
 
 
         # VALUE FIELDS
@@ -186,6 +196,10 @@ class MainWindow(QWidget):
         self.label_file.hide()
         self.file_edit.hide()
 
+        # choose save params or not
+        self.box_save = QCheckBox('Save Parameters')
+        self.layout.addWidget(self.box_save,13,1)       
+
 
 
         # GRAPH FIELDS
@@ -202,13 +216,11 @@ class MainWindow(QWidget):
         self.run_status = QLabel("Ready")
         self.run_status.setStyleSheet("color: green; font-weight: bold;")
         self.layout.addWidget(self.run_status, 12, 0)
-        
-        self.update_request = False
-        self.stop_request = False
 
 
         self.setLayout(self.layout)
         self.show()
+        # choose which window to open on start
         if util.default_mode=="Experiment":
             self.exp_mode.setCheckState(Qt.CheckState.Checked)
 
@@ -316,6 +328,7 @@ class MainWindow(QWidget):
         #turn on experiment mode
         if self.exp_mode.checkState() == Qt.CheckState.Checked:
             for widget in self.findChildren(QWidget):
+                # widgets that do not change
                 if (widget != self.exp_mode and
                     widget != self.btn_run_stimulation and
                     widget != self.btn_create_signals and
@@ -324,10 +337,14 @@ class MainWindow(QWidget):
                     widget != self.btn_stop
                     ): 
                     widget.setVisible(not widget.isVisible())
+                # widgets present in blind mode only
+                if (widget == self.box_save):
+                    widget.setVisible(True)
 
         #back to testing mode
         if self.exp_mode.checkState() == Qt.CheckState.Unchecked:
             for widget in self.findChildren(QWidget):
+                # widgets that do not change
                 if (widget != self.exp_mode and
                     widget != self.btn_run_stimulation and
                     widget != self.btn_create_signals and
@@ -336,8 +353,43 @@ class MainWindow(QWidget):
                     widget != self.btn_stop
                     ): 
                     widget.setVisible(not widget.isVisible())
+                # widgets present in blind mode only
+                if (widget == self.box_save):
+                    widget.setVisible(False)
             self.assign_values()
             self.graph_waveform(lines=False)
+
+    def save_params(self, file_name):
+        #only save if box is checked
+        if self.box_save.checkState() == Qt.CheckState.Checked:
+            directory = "stim_params"
+            parent_dir = os.getcwd()
+            path = os.path.join(parent_dir, directory) 
+
+            if not os.path.exists(path):
+                os.makedirs(path)
+
+            file_name = os.path.join(path, file_name) 
+            with open(file_name, 'a', newline='') as file:
+                file.write("\ntime,"+str(time.ctime(time.time())))
+                file.write("\n"+self.subject_edit.text()+','+self.session_edit.text())
+                file.write("\ntotal_time,"+str(self.total_iTBS_time))
+                file.write("\ntrain_stim_time,"+str(self.train_stim_time))
+                file.write("\ntrain_break_time,"+str(self.train_break_time))
+                file.write("\npulse_freq,"+str(self.freq_of_pulse))
+                file.write("\nburst_freq,"+str(self.burst_freq))
+                file.write("\ncarrier_freq,"+str(self.carrier_f))
+                file.write("\nampl_sum,"+str(self.A_sum))
+                file.write("\nampl_ratio,"+str(self.A_ratio))
+                file.write("\nampl1,"+str(self.A1))
+                file.write("\nampl2,"+str(self.A2))
+                file.write("\nramp_up_time,"+str(self.ramp_up_time))
+                file.write("\nramp_down_time,"+str(self.ramp_down_time))
+                file.write("\n")
+
+
+            
+
 
 
 
@@ -369,7 +421,7 @@ CURRENT ISSUES:
         DONE - 7) Add stop function with better functionality (update to ramp down)
         DONE - 7b) When calling update, do not want ramp up (keep ramp down, as it is needed for stim termination)
         8) Add menu to choose stimulation type
-        9) Save file with all parameters used after stimulation
+        DONE - 9) Save file with all parameters used after stimulation
         STARTED - 10) Add experiment mode
                 ->need to add reading from excel data if exp mode.
                     ->which data are stored in excel file?
