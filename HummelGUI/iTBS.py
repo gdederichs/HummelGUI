@@ -32,16 +32,16 @@ def iTBS(total_time = util.total_iTBS_time,
             the frequency in Hz of the envelope (pulse)
 
         burst_f : int
-            the frequency in Hz at which bursts (3 pulses) occur 
+            the frequency in Hz at which theta-bursts (3 pulses) occur 
 
         carrier_f : int
             the frequency in Hz of the individual signals (ie. high frequency)
 
         A1 : float
-            the amplitude of signal 1
+            the amplitude in mA of signal 1
 
         A2 : float
-            the amplitude of signal 2
+            the amplitude in mA of signal 2
 
         ramp_up_time : int
             the time in seconds of amplitude increase of high frequency signals, before stimulation
