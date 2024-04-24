@@ -6,7 +6,8 @@ from PyQt6.QtWidgets import (QLineEdit,
                             QWidget,
                             QPushButton,
                             QCheckBox,
-                            QGridLayout)
+                            QGridLayout,
+                            QComboBox)
 import pyqtgraph as pg
 
 import nidaqmx
@@ -16,6 +17,7 @@ from nidaqmx.constants import WAIT_INFINITELY as inf
 import numpy as np
 import util
 import iTBS
+import cTBS
 import threading
 
 class MainWindow(QWidget):
@@ -42,6 +44,14 @@ class MainWindow(QWidget):
         # State settings
         self.update_request = False
         self.stop_request = False
+        self.running = False
+
+        # ======== DROP DOWN FIELDS ========
+        # choose stim type
+        self.drop_stim_select = QComboBox()
+        self.drop_stim_select.addItems(["Select Stimulation","iTBS","cTBS"])
+        self.drop_stim_select.currentTextChanged.connect(self.stim_selected)
+        self.layout.addWidget(self.drop_stim_select,8,0)
 
 
         # ======== VALUE FIELDS ========
@@ -94,6 +104,7 @@ class MainWindow(QWidget):
 
         # create signals/waveforms
         self.btn_create_signals = QPushButton("Create Waveform")
+        self.btn_create_signals.setEnabled(False)
         self.btn_create_signals.clicked.connect(lambda: self.create_signals(rampup=True))
         self.btn_create_signals.clicked.connect(lambda: self.graph_waveform())
         self.btn_create_signals.clicked.connect(lambda: self.btn_run_stimulation.setEnabled(True)) #enable run button
@@ -121,9 +132,9 @@ class MainWindow(QWidget):
 
         # ======== BLIND MODE ========
         # blind mode toggle
-        self.exp_mode = QCheckBox('Blind Mode')
-        self.layout.addWidget(self.exp_mode,12,1)
-        self.exp_mode.stateChanged.connect(self.check_exp_mode)
+        self.blind_mode = QCheckBox('Blind Mode')
+        self.layout.addWidget(self.blind_mode,12,1)
+        self.blind_mode.stateChanged.connect(self.toggle_mode)
 
         # subject 
         self.label_subject = QLabel('Subject:')
@@ -159,17 +170,17 @@ class MainWindow(QWidget):
 
         # ======== GRAPH FIELDS ========
         self.dt = [0,1]
-        self.iTBS_signals = np.zeros((2,2))
+        self.TBS_signals = np.zeros((2,2))
         self.plot_waveform = pg.PlotWidget()
         self.plot_waveform.getAxis("bottom").setLabel("Time", units="s")
         self.plot_waveform.getAxis("left").setLabel("Amplitude", units="mA")
-        self.plot_waveform.plot(self.dt, self.iTBS_signals[0]+self.iTBS_signals[1])
+        self.plot_waveform.plot(self.dt, self.TBS_signals[0]+self.TBS_signals[1])
         self.layout.addWidget(self.plot_waveform,0,2,14,1)
 
 
         # ======== LABEL FIELDS ========
-        self.run_status = QLabel("Ready")
-        self.run_status.setStyleSheet("color: green; font-weight: bold;")
+        self.run_status = QLabel("Select Stimulation")
+        self.run_status.setStyleSheet("color: orange; font-weight: bold;")
         self.layout.addWidget(self.run_status, 12, 0)
 
 
@@ -178,7 +189,7 @@ class MainWindow(QWidget):
         self.show()
         # choose which window to open on start
         if util.default_mode=="Blind":
-            self.exp_mode.setCheckState(Qt.CheckState.Checked)
+            self.blind_mode.setCheckState(Qt.CheckState.Checked)
 
 
 
@@ -206,19 +217,34 @@ class MainWindow(QWidget):
         """
         Description
         -----------
-        Creates signals from GUI values (calls assign_values() before running), and stores signals
+        Creates signals from GUI values (calls assign_values() before running)
+        and selected stimulation type, and stores signals
         """
         self.assign_values()
-        self.dt, self.iTBS_signals = iTBS.iTBS(self.total_iTBS_time,
-                                     self.train_stim_time,
-                                     self.train_break_time,
-                                     self.freq_of_pulse,
-                                     self.burst_freq,
-                                     self.carrier_f,
-                                     self.A1, self.A2,
-                                     self.ramp_up_time,
-                                     self.ramp_down_time,
-                                     rampup=rampup)
+
+        if self.drop_stim_select.currentText() == "iTBS":
+            self.dt, self.TBS_signals = iTBS.iTBS(self.total_iTBS_time,
+                                        self.train_stim_time,
+                                        self.train_break_time,
+                                        self.freq_of_pulse,
+                                        self.burst_freq,
+                                        self.carrier_f,
+                                        self.A1, self.A2,
+                                        self.ramp_up_time,
+                                        self.ramp_down_time,
+                                        rampup=rampup)
+            
+        elif self.drop_stim_select.currentText() == "cTBS":
+            self.dt, self.TBS_signals = cTBS.cTBS(self.total_iTBS_time,
+                                        self.freq_of_pulse,
+                                        self.burst_freq,
+                                        self.carrier_f,
+                                        self.A1, self.A2,
+                                        self.ramp_up_time,
+                                        self.ramp_down_time,
+                                        rampup=rampup)
+            
+            
         
     def create_stop_signal(self):
         """
@@ -226,10 +252,10 @@ class MainWindow(QWidget):
         -----------
         Creates a ramp down signal with null envelope
         """
-        #named iTBS_signals for code, 
+        #named TBS_signals for code, 
         #but is simply high f signals,
         #with decreasing amplitude and null envelope
-        self.iTBS_signals = util.ramp(direction="down",
+        self.TBS_signals = util.ramp(direction="down",
                                  carrier_f=self.carrier_f,
                                  ramp_time=self.ramp_down_time,
                                  A1_max=self.A1,
@@ -243,10 +269,10 @@ class MainWindow(QWidget):
         Plot the sum of signals stored in GUI and shows the result in a widget
         """
         #only run if mode is not blind
-        if self.exp_mode.checkState() == Qt.CheckState.Unchecked:
+        if self.blind_mode.checkState() == Qt.CheckState.Unchecked:
             self.plot_waveform = pg.PlotWidget()
             self.plot_waveform.plotItem.setMouseEnabled(y=False) # Only allow zoom in X-axis
-            self.plot_waveform.plot(self.dt,self.iTBS_signals[0]+self.iTBS_signals[1],)
+            self.plot_waveform.plot(self.dt,self.TBS_signals[0]+self.TBS_signals[1],)
             self.plot_waveform.getAxis("bottom").setLabel("Time", units="s")
             self.plot_waveform.getAxis("left").setLabel("Amplitude", units="mA")
 
@@ -292,24 +318,44 @@ class MainWindow(QWidget):
         -----------
         Sends signal to DAQ, usually called by worker thread to avoid GUI freezing
         """
-        self.task.write(self.iTBS_signals)
+        self.task.write(self.TBS_signals)
         self.task.start()
+        self.running = True
         # continuously checks for update or stop request while task is running
         while not self.task.is_task_done():
             if self.update_request:
                 # create new waveform without ramp-up
                 self.task.stop()
                 self.create_signals(rampup=False)
-                self.task.timing.cfg_samp_clk_timing(rate=util.sampling_f, sample_mode=AcquisitionType.FINITE, samps_per_chan=np.shape(self.iTBS_signals)[1])
+                self.task.timing.cfg_samp_clk_timing(rate=util.sampling_f, sample_mode=AcquisitionType.FINITE, samps_per_chan=np.shape(self.TBS_signals)[1])
                 self.worker_thread.update()
             if self.stop_request:
                 # new waveform is ramp-down
                 self.task.stop()
                 self.create_stop_signal()
-                self.task.timing.cfg_samp_clk_timing(rate=util.sampling_f, sample_mode=AcquisitionType.FINITE, samps_per_chan=np.shape(self.iTBS_signals)[1])
+                self.task.timing.cfg_samp_clk_timing(rate=util.sampling_f, sample_mode=AcquisitionType.FINITE, samps_per_chan=np.shape(self.TBS_signals)[1])
                 self.worker_thread.update()
+            
 
 
+    def stim_selected(self):
+        """
+        Description
+        -----------
+        Updates label when stim is selected
+        """
+        if not self.running:
+            if self.drop_stim_select.currentText()=="iTBS" or self.drop_stim_select.currentText()=="cTBS":
+                self.run_status.setText("Ready")
+                self.run_status.setStyleSheet("color: green; font-weight: bold;")
+                self.btn_create_signals.setEnabled(True)
+            else:
+                print("debug")
+                self.run_status.setText("Select Stimulation")
+                self.run_status.setStyleSheet("color: orange; font-weight: bold;")
+                self.btn_create_signals.setEnabled(False)
+
+    
     def request_update(self):
         """
         Description
@@ -328,17 +374,18 @@ class MainWindow(QWidget):
         self.stop_request = True
 
 
-    def check_exp_mode(self):
+    def toggle_mode(self):
         """
         Description
         -----------
-        Toggles GUI widgets between Blind mode (=exp_mode; =experiment mode) and Testing mode
+        Toggles GUI widgets between Blind mode and Testing mode
         """
         #turn on blind mode
-        if self.exp_mode.checkState() == Qt.CheckState.Checked:
+        if self.blind_mode.checkState() == Qt.CheckState.Checked:
             for widget in self.findChildren(QWidget):
                 # widgets that do not change
-                if (widget != self.exp_mode and
+                if (widget != self.blind_mode and
+                    widget != self.drop_stim_select and
                     widget != self.btn_run_stimulation and
                     widget != self.btn_create_signals and
                     widget != self.btn_update and
@@ -351,10 +398,11 @@ class MainWindow(QWidget):
                     widget.setVisible(True)
 
         #back to testing mode
-        if self.exp_mode.checkState() == Qt.CheckState.Unchecked:
+        if self.blind_mode.checkState() == Qt.CheckState.Unchecked:
             for widget in self.findChildren(QWidget):
                 # widgets that do not change
-                if (widget != self.exp_mode and
+                if (widget != self.blind_mode and
+                    widget != self.drop_stim_select and
                     widget != self.btn_run_stimulation and
                     widget != self.btn_create_signals and
                     widget != self.btn_update and
@@ -369,6 +417,12 @@ class MainWindow(QWidget):
             # recall graphing to show signals in Testing mode        
             self.assign_values()
             self.graph_waveform(lines=False)
+        
+        # handling view toggle of ComboBox
+        for drops in self.drop_stim_select.findChildren(QWidget):
+            drops.setVisible(True)
+        self.drop_stim_select.hidePopup()
+
 
     def save_params(self, file_name):
         """
@@ -459,7 +513,7 @@ class WorkerThread(threading.Thread):
         self.parent.task = nidaqmx.Task()
         self.parent.task.ao_channels.add_ao_voltage_chan(util.device+"/ao0")
         self.parent.task.ao_channels.add_ao_voltage_chan(util.device+"/ao1")
-        self.parent.task.timing.cfg_samp_clk_timing(rate=util.sampling_f, sample_mode=AcquisitionType.FINITE, samps_per_chan=np.shape(self.parent.iTBS_signals)[1])
+        self.parent.task.timing.cfg_samp_clk_timing(rate=util.sampling_f, sample_mode=AcquisitionType.FINITE, samps_per_chan=np.shape(self.parent.TBS_signals)[1])
 
         # write signals to DAQ
         self.parent.send_signal()
@@ -467,15 +521,16 @@ class WorkerThread(threading.Thread):
         # task closing handling
         self.parent.task.wait_until_done(inf)
         self.parent.task.close()
+        self.parent.running = False
 
         # handle button enabling/disabling after run
         self.parent.btn_update.setEnabled(False)
         self.parent.btn_stop.setEnabled(False)
-        self.parent.btn_create_signals.setEnabled(True) 
 
         # reset status labels
         self.parent.run_status.setText("Ready")
         self.parent.run_status.setStyleSheet("color: green; font-weight: bold;")
+        self.parent.stim_selected() 
 
         # save parameters of experiment to csv
         self.parent.save_params(util.save_filename)
