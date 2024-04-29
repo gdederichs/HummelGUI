@@ -15,6 +15,8 @@ from nidaqmx.constants import AcquisitionType
 from nidaqmx.constants import WAIT_INFINITELY as inf
 
 import numpy as np
+import pandas as pd
+
 import util
 import iTBS
 import cTBS
@@ -47,60 +49,84 @@ class MainWindow(QWidget):
         self.running = False
 
         # ======== DROP DOWN FIELDS ========
+        # label
+        self.select_stim_label = QLabel("Stimulation Type")
+        self.select_stim_label.setStyleSheet("color: black; font-weight: bold; font-size: 14pt;")
+        self.layout.addWidget(self.select_stim_label, 0, 0)
         # choose stim type
         self.drop_stim_select = QComboBox()
         self.drop_stim_select.addItems(["Select Stimulation","iTBS","cTBS"])
         self.drop_stim_select.currentTextChanged.connect(self.stim_selected)
-        self.layout.addWidget(self.drop_stim_select,8,0)
+        self.layout.addWidget(self.drop_stim_select,1,0)
 
 
         # ======== VALUE FIELDS ========
+        # labels
+        self.parameter_label = QLabel("Stimulation Parameters")
+        self.parameter_label.setStyleSheet("color: black; font-weight: bold; font-size: 14pt;")
+        self.layout.addWidget(self.parameter_label,3,0)
+
+        # time label
+        self.time_label = QLabel("Duration Parameters")
+        self.time_label.setStyleSheet("color: black; font-weight: bold;")
+        self.layout.addWidget(self.time_label,4,0)
+
         # total stimulation time
-        self.layout.addWidget(QLabel('Total Duration (seconds):'), 0, 0)
+        self.layout.addWidget(QLabel('Total Duration (seconds):'), 5, 0)
         self.total_iTBS_time_edit = QLineEdit(str(util.total_iTBS_time))
-        self.layout.addWidget(self.total_iTBS_time_edit,0,1)
+        self.layout.addWidget(self.total_iTBS_time_edit,5,1)
 
         # time of stimulation in one cycle (train)
-        self.layout.addWidget(QLabel('Ramp-up Time (seconds):'), 1, 0)
+        self.layout.addWidget(QLabel('Ramp-up Time (seconds):'), 6, 0)
         self.ramp_up_time_edit = QLineEdit(str(util.ramp_up_time))
-        self.layout.addWidget(self.ramp_up_time_edit,1,1)
+        self.layout.addWidget(self.ramp_up_time_edit,6,1)
 
         # time of break in on cycle (train)
-        self.layout.addWidget(QLabel('Ramp-down Time (seconds):'), 2, 0)
+        self.layout.addWidget(QLabel('Ramp-down Time (seconds):'), 7, 0)
         self.ramp_down_time_edit = QLineEdit(str(util.ramp_down_time))
-        self.layout.addWidget(self.ramp_down_time_edit,2,1)
+        self.layout.addWidget(self.ramp_down_time_edit,7,1)
+
+        # time label
+        self.freq_label = QLabel("Frequency Parameters")
+        self.freq_label.setStyleSheet("color: black; font-weight: bold;")
+        self.layout.addWidget(self.freq_label,8,0)
 
         # pulse frequency
-        self.layout.addWidget(QLabel('Pulse Frequency (Hz):'), 3, 0)
+        self.layout.addWidget(QLabel('Pulse Frequency (Hz):'), 9, 0)
         self.freq_of_pulse_edit = QLineEdit(str(util.freq_of_pulse))
-        self.layout.addWidget(self.freq_of_pulse_edit,3,1)
+        self.layout.addWidget(self.freq_of_pulse_edit,9,1)
 
         # cycle frequency
-        self.layout.addWidget(QLabel('Burst Frequency (Hz):'), 4, 0)
+        self.layout.addWidget(QLabel('Burst Frequency (Hz):'), 10, 0)
         self.burst_freq_edit = QLineEdit(str(util.burst_freq))
-        self.layout.addWidget(self.burst_freq_edit,4,1)
+        self.layout.addWidget(self.burst_freq_edit,10,1)
 
         # carrier frequency
-        self.layout.addWidget(QLabel('Carrier Frequency (Hz):'), 5, 0)
+        self.layout.addWidget(QLabel('Carrier Frequency (Hz):'), 11, 0)
         self.carrier_f_edit = QLineEdit(str(util.carrier_f))
-        self.layout.addWidget(self.carrier_f_edit,5,1)
+        self.layout.addWidget(self.carrier_f_edit,11,1)
+
+        # current label
+        self.currents_label = QLabel("Current Parameters")
+        self.currents_label.setStyleSheet("color: black; font-weight: bold;")
+        self.layout.addWidget(self.currents_label,12,0)
 
         # sum of amplitudes
-        self.layout.addWidget(QLabel('Amplitude Sum (mA):'), 6, 0)
+        self.layout.addWidget(QLabel('Amplitude Sum (mA):'), 13, 0)
         self.A_sum_edit = QLineEdit(str(util.A_sum))
-        self.layout.addWidget(self.A_sum_edit,6,1)
+        self.layout.addWidget(self.A_sum_edit,13,1)
 
         # ratio of amplitudes
-        self.layout.addWidget(QLabel('Amplitude Ratio (A1/A2):'), 7, 0)
+        self.layout.addWidget(QLabel('Amplitude Ratio (A1/A2):'), 14, 0)
         self.A_ratio_edit = QLineEdit(str(util.A_ratio))
-        self.layout.addWidget(self.A_ratio_edit,7,1)
+        self.layout.addWidget(self.A_ratio_edit,14,1)
 
 
         # ======== BUTTON FIELDS ========
         # reset (default set in util.py)
         self.btn_reset_defaults = QPushButton("Reset to Default Values")
         self.btn_reset_defaults.clicked.connect(self.reset_defaults)
-        self.layout.addWidget(self.btn_reset_defaults,8,1)
+        self.layout.addWidget(self.btn_reset_defaults,16,1)
 
         # create signals/waveforms
         self.btn_create_signals = QPushButton("Create Waveform")
@@ -108,64 +134,87 @@ class MainWindow(QWidget):
         self.btn_create_signals.clicked.connect(lambda: self.create_signals(rampup=True))
         self.btn_create_signals.clicked.connect(lambda: self.graph_waveform())
         self.btn_create_signals.clicked.connect(lambda: self.btn_run_stimulation.setEnabled(True)) #enable run button
-        self.layout.addWidget(self.btn_create_signals,9,0,1,2)
+        self.layout.addWidget(self.btn_create_signals,1,2,1,2)
 
         # run stimulation
         self.btn_run_stimulation = QPushButton("Run Stimulation")
         self.btn_run_stimulation.setEnabled(False)  #can't run unless signal is created
         self.btn_run_stimulation.clicked.connect(lambda: self.btn_run_stimulation.setEnabled(False))# disable button after run; forces to recreate signal before running
         self.btn_run_stimulation.clicked.connect(self.run_stimulation)
-        self.layout.addWidget(self.btn_run_stimulation,10,0,1,2)
+        self.layout.addWidget(self.btn_run_stimulation,12,2,1,2)
 
         # update stimulation
         self.btn_update = QPushButton("Update Stimulation")
         self.btn_update.setEnabled(False) #can't update unless running
         self.btn_update.clicked.connect(self.request_update)
-        self.layout.addWidget(self.btn_update,11,0)
+        self.layout.addWidget(self.btn_update,13,2)
 
         # stop stimulation
         self.btn_stop = QPushButton("Stop Stimulation")
         self.btn_stop.setEnabled(False) #can't stop unless running
         self.btn_stop.clicked.connect(self.request_stop)
-        self.layout.addWidget(self.btn_stop,11,1)
+        self.layout.addWidget(self.btn_stop,13,3)
 
 
         # ======== BLIND MODE ========
         # blind mode toggle
         self.blind_mode = QCheckBox('Blind Mode')
-        self.layout.addWidget(self.blind_mode,12,1)
+        self.layout.addWidget(self.blind_mode,0,2)
         self.blind_mode.stateChanged.connect(self.toggle_mode)
+
+        # blind mode label
+        self.blind_label = QLabel("Blind Mode")
+        self.blind_label.setStyleSheet("color: white; font-weight: bold; font-size: 30pt;")
+        self.blind_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.layout.addWidget(self.blind_label,7,0,5,4)
+        self.blind_label.hide()
+
+        # get session button
+        self.btn_session = QPushButton("Get Stimulation from file")
+        self.btn_session.clicked.connect(lambda: self.read_from_data(self.file_edit.text()))
+        self.layout.addWidget(self.btn_session, 1, 0)
+        self.btn_session.hide()
 
         # subject 
         self.label_subject = QLabel('Subject:')
-        self.layout.addWidget(self.label_subject, 0, 0)
+        self.layout.addWidget(self.label_subject, 4, 0)
         self.subject_edit = QLineEdit("")
         self.subject_edit.setPlaceholderText("Subject ID")
-        self.layout.addWidget(self.subject_edit,0,1)
+        self.layout.addWidget(self.subject_edit,4,1)
         self.label_subject.hide()
         self.subject_edit.hide()
 
         # session
         self.label_session = QLabel('Session:')
-        self.layout.addWidget(self.label_session, 1, 0)
+        self.layout.addWidget(self.label_session, 4, 2)
         self.session_edit = QLineEdit("")
         self.session_edit.setPlaceholderText("Session ID")
-        self.layout.addWidget(self.session_edit,1,1)
+        self.layout.addWidget(self.session_edit,4,3)
         self.label_session.hide()
         self.session_edit.hide()
 
         # file name storing data for stimulation
-        self.label_file = QLabel('File storing data for stimulation:')
-        self.layout.addWidget(self.label_file, 2, 0)
+        self.label_file = QLabel('Stimulation Data:')
+        self.layout.addWidget(self.label_file, 5, 2)
         self.file_edit = QLineEdit("")
-        self.file_edit.setPlaceholderText("your\\file\\path\\here\\for\\stim\\data.xlxs")
-        self.layout.addWidget(self.file_edit,2,1)
+        self.file_edit.setPlaceholderText("file containing stimulation data")
+        self.layout.addWidget(self.file_edit,5,3)
         self.label_file.hide()
         self.file_edit.hide()
 
+        # save location
+        self.label_save = QLabel('Save Location')
+        self.layout.addWidget(self.label_save, 5, 0)
+        self.save_edit = QLineEdit("")
+        self.save_edit.setPlaceholderText("default folder: parameter_history")
+        self.layout.addWidget(self.save_edit,5,1)
+        self.label_save.hide()
+        self.save_edit.hide()
+
         # choose save params or not
         self.box_save = QCheckBox('Save Parameters')
-        self.layout.addWidget(self.box_save,13,1)       
+        self.box_save.stateChanged.connect(lambda:self.save_params(directory=self.save_edit.text()))
+        self.layout.addWidget(self.box_save,6,1)       
 
 
         # ======== GRAPH FIELDS ========
@@ -175,18 +224,21 @@ class MainWindow(QWidget):
         self.plot_waveform.getAxis("bottom").setLabel("Time", units="s")
         self.plot_waveform.getAxis("left").setLabel("Amplitude", units="mA")
         self.plot_waveform.plot(self.dt, self.TBS_signals[0]+self.TBS_signals[1])
-        self.layout.addWidget(self.plot_waveform,0,2,14,1)
+        self.layout.addWidget(self.plot_waveform,3,2,9,2)
 
 
         # ======== LABEL FIELDS ========
         self.run_status = QLabel("Select Stimulation")
         self.run_status.setStyleSheet("color: orange; font-weight: bold;")
-        self.layout.addWidget(self.run_status, 12, 0)
+        self.layout.addWidget(self.run_status, 16, 3)
 
 
         # ======== APPLY LAYOUT ========
         self.setLayout(self.layout)
         self.show()
+        for widget in self.findChildren(QWidget):
+            if isinstance(widget, QLabel) and widget != self.blind_label:
+                widget.setAlignment(Qt.AlignmentFlag.AlignRight)
         # choose which window to open on start
         if util.default_mode=="Blind":
             self.blind_mode.setCheckState(Qt.CheckState.Checked)
@@ -283,7 +335,7 @@ class MainWindow(QWidget):
                 self.plot_waveform.addItem(self.ramp_up_line)
                 self.plot_waveform.addItem(self.ramp_down_line)
 
-            self.layout.addWidget(self.plot_waveform,0,2,14,1)
+            self.layout.addWidget(self.plot_waveform,3,2,9,2)
 
         
     def reset_defaults(self):
@@ -350,7 +402,6 @@ class MainWindow(QWidget):
                 self.run_status.setStyleSheet("color: green; font-weight: bold;")
                 self.btn_create_signals.setEnabled(True)
             else:
-                print("debug")
                 self.run_status.setText("Select Stimulation")
                 self.run_status.setStyleSheet("color: orange; font-weight: bold;")
                 self.btn_create_signals.setEnabled(False)
@@ -385,12 +436,13 @@ class MainWindow(QWidget):
             for widget in self.findChildren(QWidget):
                 # widgets that do not change
                 if (widget != self.blind_mode and
-                    widget != self.drop_stim_select and
                     widget != self.btn_run_stimulation and
                     widget != self.btn_create_signals and
                     widget != self.btn_update and
                     widget != self.run_status and
-                    widget != self.btn_stop
+                    widget != self.btn_stop and 
+                    widget != self.select_stim_label and
+                    widget != self.parameter_label
                     ): 
                     widget.setVisible(not widget.isVisible())
                 # widgets present in blind mode only
@@ -402,12 +454,13 @@ class MainWindow(QWidget):
             for widget in self.findChildren(QWidget):
                 # widgets that do not change
                 if (widget != self.blind_mode and
-                    widget != self.drop_stim_select and
                     widget != self.btn_run_stimulation and
                     widget != self.btn_create_signals and
                     widget != self.btn_update and
                     widget != self.run_status and
-                    widget != self.btn_stop
+                    widget != self.btn_stop and
+                    widget != self.select_stim_label and
+                    widget != self.parameter_label
                     ): 
                     widget.setVisible(not widget.isVisible())
                 # widgets present in blind mode only
@@ -424,7 +477,50 @@ class MainWindow(QWidget):
         self.drop_stim_select.hidePopup()
 
 
-    def save_params(self, file_name):
+    def read_from_data(self, file_name):
+        """
+        Description
+        -----------
+        Choose stimulation protocol from excel file (for blind mode)
+
+        Parameters
+        ----------
+        file_name : string
+            name of the file storing protocol information; the file should contain a 3 x m matrix. 
+            Column 1 contains subject ID. Column 2 contains protocol of session T3. Column 3 contains protocol of session T5.
+        """
+        parent_dir = os.getcwd()
+        path = os.path.join(parent_dir,"HummelGUI", file_name) 
+
+        if not os.path.exists(path):
+            self.run_status.setText("File not found")
+            self.run_status.setStyleSheet("color: red; font-weight: bold;")
+        else:
+            df = pd.read_excel(path)
+            session = self.session_edit.text()
+            subject = self.subject_edit.text()
+            df.index = df["Subj"]
+            try:
+                stim_type = df.at[subject, session]
+            except:
+                self.run_status.setText("Check session and subject ID")
+                self.run_status.setStyleSheet("color: red; font-weight: bold;")
+                self.btn_create_signals.setEnabled(False)
+                return
+
+            if stim_type == "iTBS":
+                self.drop_stim_select.setCurrentText("iTBS")
+                self.stim_selected()
+            elif stim_type == "cTBS":
+                self.drop_stim_select.setCurrentText("cTBS")
+                self.stim_selected()
+            else:
+                self.run_status.setText("Stimulation type ({}) not recognised".format(stim_type))
+                self.run_status.setStyleSheet("color: red; font-weight: bold;")
+                self.btn_create_signals.setEnabled(False)
+
+
+    def save_params(self, directory=""): # CHANGE HERE: folder name (or nothing) not file name
         """
         Description
         -----------
@@ -440,14 +536,15 @@ class MainWindow(QWidget):
         """
         #only save if box is checked
         if self.box_save.checkState() == Qt.CheckState.Checked:
-            directory = "parameter_history"
+            if directory == "":
+                directory = "parameter_history"
             parent_dir = os.getcwd()
             path = os.path.join(parent_dir, directory) 
 
             if not os.path.exists(path):
                 os.makedirs(path)
 
-            file_name = os.path.join(path, file_name) 
+            file_name = os.path.join(path, self.subject_edit.text()+self.session_edit.text()+".csv") 
             with open(file_name, 'a', newline='') as file:
                 file.write("\ntime,"+str(time.ctime(time.time())))
                 file.write("\n"+self.subject_edit.text()+','+self.session_edit.text())
@@ -539,15 +636,6 @@ class WorkerThread(threading.Thread):
             
 
 """
-CURRENT ISSUES:
--with stop: works in both multi_channel_test.py and GUI, but ONLY IF stim is in break (outputting zeros).
-            else: spikes as usual
--update works at any time --> for stop, update to null function, for 2/3 seconds and then call stop
--next:  -put correct value fields in GUI/clean GUI, with more headers, information etc/compare with MATLAB GUI and build towards that
-        -make GUI nicer looking
-        -add drop down menu to choose waveform?
-        -with trigger?
-
 -next:  DONE - 1) Rename cycle durations to train durations
         DONE - 2) Rename cycle freq to burst freq
         DONE - 3) Amplitudes should be defined by sum and ratio

@@ -2,25 +2,69 @@ import nidaqmx
 import threading
 import nidaqmx.task
 import numpy as np
-import HummelGUI.util as util
 from matplotlib import pyplot as plt
 from nidaqmx.constants import AcquisitionType
 from nidaqmx.constants import WAIT_INFINITELY as inf
 import time
-import HummelGUI.iTBS as iTBS
+
 
 
 #THIS FILE IS A SCRAP FILE FOR TESTING OF DIFFERENT CODE SNIPPETS, FUNCTIONS, ETC.
 #THERE SHOULD BE NO IMPORTANT CODE IN THIS FILE THAT HAS NOT BEEN IMPLEMENTED IN ANOTHER FILE
 
+import sys
+from PyQt6.QtWidgets import QApplication, QWidget, QGridLayout, QVBoxLayout, QLineEdit, QLabel
 
+class MyApp(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.initUI()
 
+    def initUI(self):
+        # Create main layout
+        mainLayout = QGridLayout()
+
+        # Create first box layout
+        box1Layout = QGridLayout()
+        box1Layout.addWidget(QLabel("Field 1:"), 0, 0)
+        box1Layout.addWidget(QLineEdit(), 0, 1)
+        box1Layout.addWidget(QLabel("Field 2:"), 1, 0)
+        box1Layout.addWidget(QLineEdit(), 1, 1)
+
+        # Create second box layout
+        box2Layout = QGridLayout()
+        box2Layout.addWidget(QLabel("Field 3:"), 0, 0)
+        box2Layout.addWidget(QLineEdit(), 0, 1)
+        box2Layout.addWidget(QLabel("Field 4:"), 1, 0)
+        box2Layout.addWidget(QLineEdit(), 1, 1)
+
+        # Add box layouts to the main layout
+        mainLayout.addLayout(box1Layout,0,1)
+        mainLayout.addLayout(box2Layout,0,2)
+
+        self.setLayout(mainLayout)
+
+        self.setGeometry(300, 300, 300, 200)
+        self.setWindowTitle('PyQt6 Example')
+        self.show()
+
+def main():
+    app = QApplication(sys.argv)
+    ex = MyApp()
+    sys.exit(app.exec())
+
+if __name__ == '__main__':
+    main()
+
+"""
 signals = util.createTI(plot=False)
 print(np.shape(signals))
 print(np.shape(signals[0]))
 print(np.shape(signals[1]))
 
 signals = iTBS.iTBS(plot=True)
+"""
+
 """
 a=np.asarray([1,2,3,4,5])
 b=np.asarray([3,4,3,4,3])
