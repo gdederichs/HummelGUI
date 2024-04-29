@@ -213,7 +213,6 @@ class MainWindow(QWidget):
 
         # choose save params or not
         self.box_save = QCheckBox('Save Parameters')
-        self.box_save.stateChanged.connect(lambda:self.save_params(directory=self.save_edit.text()))
         self.layout.addWidget(self.box_save,6,1)       
 
 
@@ -496,7 +495,14 @@ class MainWindow(QWidget):
             self.run_status.setText("File not found")
             self.run_status.setStyleSheet("color: red; font-weight: bold;")
         else:
-            df = pd.read_excel(path)
+            try:
+                df = pd.read_excel(path)
+            except:
+                self.run_status.setText("Check filename")
+                self.run_status.setStyleSheet("color: red; font-weight: bold;")
+                self.btn_create_signals.setEnabled(False)
+                return
+            
             session = self.session_edit.text()
             subject = self.subject_edit.text()
             df.index = df["Subj"]
