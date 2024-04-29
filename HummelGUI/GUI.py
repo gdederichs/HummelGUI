@@ -588,7 +588,7 @@ class WorkerThread(threading.Thread):
             self.parent.stop_request = False
             self.parent.run_status.setText("Ramping Down")
             self.parent.run_status.setStyleSheet("color: orange; font-weight: bold;")
-
+        self.parent.save_params(directory=self.parent.save_edit.text())
         self.parent.send_signal()
 
     def run(self):
@@ -597,6 +597,9 @@ class WorkerThread(threading.Thread):
         -----------
         Run and send signals to DAQ, as triggered by parent.
         """
+        # save parameters of start of experiment to csv
+        self.parent.save_params(directory=self.parent.save_edit.text())
+
         # change status labels for GUI
         self.parent.run_status.setText("Stimulation Ongoing")
         self.parent.run_status.setStyleSheet("color: red; font-weight: bold;")
@@ -629,9 +632,6 @@ class WorkerThread(threading.Thread):
         self.parent.run_status.setStyleSheet("color: green; font-weight: bold;")
         self.parent.stim_selected() 
 
-        # save parameters of experiment to csv
-        self.parent.save_params(util.save_filename)
-
 
             
 
@@ -648,8 +648,9 @@ class WorkerThread(threading.Thread):
         DONE - 7b) When calling update, do not want ramp up (keep ramp down, as it is needed for stim termination)
         8) Add menu to choose stimulation type
         DONE - 9) Save file with all parameters used after stimulation
-        STARTED - 10) Add blind mode
+        DONE - 10) Add blind mode
                 ->need to add reading from excel data if exp mode.
                     ->which data are stored in excel file?
+        10b) Save start time and save params at each update
         11) Trigger
 """
