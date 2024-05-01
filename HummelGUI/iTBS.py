@@ -1,7 +1,17 @@
+"""
+Description
+-----------
+Module for the creation of iTBS signals
+
+Author
+------
+Gregor Dederichs, EPFL School of Life Sciences
+"""
+
 import numpy as np
 import util
 
-def iTBS(total_time = util.total_iTBS_time,
+def iTBS(total_time = util.total_TBS_time,
          stim_time = util.train_stim_time,
          break_time = util.train_break_time,
          pulse_f = util.freq_of_pulse,
@@ -118,10 +128,6 @@ def iTBS(total_time = util.total_iTBS_time,
     # add 100 zeros to offset spiking and update dt accordingly 
     signals = np.concatenate((signals, np.zeros((2,100))), axis=1)
     dt = np.concatenate((dt, dt[-1] + np.arange(0, 100) * dt[1]-dt[0]))
-    
-    #shifts 0 to beginning of stim if ramp is included
-    if rampup:
-        dt -= ramp_up_time 
 
 
     return dt, signals

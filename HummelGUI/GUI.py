@@ -1,3 +1,13 @@
+"""
+Description
+-----------
+Module supporting the entire graphical user interface for TBS
+
+Author
+------
+Gregor Dederichs, EPFL School of Life Sciences
+"""
+
 import time
 import os
 from PyQt6.QtCore import Qt
@@ -10,7 +20,6 @@ from PyQt6.QtWidgets import (QLineEdit,
                             QComboBox)
 import pyqtgraph as pg
 
-import nidaqmx
 from nidaqmx.constants import AcquisitionType
 from nidaqmx.constants import WAIT_INFINITELY as inf
 
@@ -20,7 +29,9 @@ import pandas as pd
 import util
 import iTBS
 import cTBS
-import threading
+import TBS_ctrl
+import GUI_worker
+
 
 class MainWindow(QWidget):
     """
@@ -32,15 +43,15 @@ class MainWindow(QWidget):
         """
         Description
         -----------
-        Initialise main window of the GUI.
+        Initialise main window of the GUI and sets its layout
         The main GUI window handles all events linked to the GUI, 
-        notably storing all parameters and functions necessary for NIBS
+        notably storing all parameters and functions necessary for TI
         """
         super().__init__(*args, **kwargs)
 
         # Visual settings
-        self.setWindowTitle('iTBS Interface')
-        self.resize(800,0)
+        self.setWindowTitle('TI Interface')
+        self.resize(800,500)
         self.layout = QGridLayout()
         
         # State settings
@@ -55,7 +66,7 @@ class MainWindow(QWidget):
         self.layout.addWidget(self.select_stim_label, 0, 0)
         # choose stim type
         self.drop_stim_select = QComboBox()
-        self.drop_stim_select.addItems(["Select Stimulation","iTBS","cTBS"])
+        self.drop_stim_select.addItems(["Select Stimulation","iTBS","cTBS","TBS_control"])
         self.drop_stim_select.currentTextChanged.connect(self.stim_selected)
         self.layout.addWidget(self.drop_stim_select,1,0)
 
@@ -73,8 +84,8 @@ class MainWindow(QWidget):
 
         # total stimulation time
         self.layout.addWidget(QLabel('Total Duration (seconds):'), 5, 0)
-        self.total_iTBS_time_edit = QLineEdit(str(util.total_iTBS_time))
-        self.layout.addWidget(self.total_iTBS_time_edit,5,1)
+        self.total_TBS_time_edit = QLineEdit(str(util.total_TBS_time))
+        self.layout.addWidget(self.total_TBS_time_edit,5,1)
 
         # time of stimulation in one cycle (train)
         self.layout.addWidget(QLabel('Ramp-up Time (seconds):'), 6, 0)
@@ -231,7 +242,7 @@ class MainWindow(QWidget):
         self.run_status.setStyleSheet("color: orange; font-weight: bold;")
         self.layout.addWidget(self.run_status, 16, 3)
 
-
+        
         # ======== APPLY LAYOUT ========
         self.setLayout(self.layout)
         self.show()
@@ -260,7 +271,8 @@ class MainWindow(QWidget):
         -----------
         Read values from GUI fields and store them
         """
-        self.total_iTBS_time = int(self.total_iTBS_time_edit.text())
+
+        self.total_TBS_time = int(self.total_TBS_time_edit.text())
         self.train_stim_time = util.train_stim_time
         self.train_break_time = util.train_break_time
         self.freq_of_pulse = int(self.freq_of_pulse_edit.text())
@@ -273,6 +285,7 @@ class MainWindow(QWidget):
         self.ramp_up_time = float(self.ramp_up_time_edit.text())
         self.ramp_down_time = float(self.ramp_down_time_edit.text())
 
+
     def create_signals(self, rampup=True):
         """
         Description
@@ -283,7 +296,7 @@ class MainWindow(QWidget):
         self.assign_values()
 
         if self.drop_stim_select.currentText() == "iTBS":
-            self.dt, self.TBS_signals = iTBS.iTBS(self.total_iTBS_time,
+            self.dt, self.TBS_signals = iTBS.iTBS(self.total_TBS_time,
                                         self.train_stim_time,
                                         self.train_break_time,
                                         self.freq_of_pulse,
@@ -295,7 +308,7 @@ class MainWindow(QWidget):
                                         rampup=rampup)
             
         elif self.drop_stim_select.currentText() == "cTBS":
-            self.dt, self.TBS_signals = cTBS.cTBS(self.total_iTBS_time,
+            self.dt, self.TBS_signals = cTBS.cTBS(self.total_TBS_time,
                                         self.freq_of_pulse,
                                         self.burst_freq,
                                         self.carrier_f,
@@ -304,8 +317,20 @@ class MainWindow(QWidget):
                                         self.ramp_down_time,
                                         rampup=rampup)
             
+        elif self.drop_stim_select.currentText() == "TBS_control":
+            self.dt, self.TBS_signals = TBS_ctrl.TBS_control(self.total_TBS_time,
+                                                             self.carrier_f,
+                                                             self.A1,
+                                                             self.A2,
+                                                             self.ramp_up_time,
+                                                             self.ramp_down_time,
+                                                             rampup=rampup)
             
-        
+        else:
+            self.dt = [0,1]
+            self.TBS_signals = np.zeros((2,2))
+            
+               
     def create_stop_signal(self):
         """
         Description
@@ -333,13 +358,14 @@ class MainWindow(QWidget):
             self.plot_waveform = pg.PlotWidget()
             self.plot_waveform.plotItem.setMouseEnabled(y=False) # Only allow zoom in X-axis
             self.plot_waveform.plot(self.dt,self.TBS_signals[0]+self.TBS_signals[1],)
+            self.plot_waveform.setYRange(-self.A_sum,self.A_sum)
             self.plot_waveform.getAxis("bottom").setLabel("Time", units="s")
             self.plot_waveform.getAxis("left").setLabel("Amplitude", units="mA")
 
             #plot lines surrounding main signal (exclude ramps)
             if lines:
-                self.ramp_up_line = pg.InfiniteLine(pos=0, angle=90, movable=False)
-                self.ramp_down_line = pg.InfiniteLine(pos=self.total_iTBS_time, angle=90, movable=False)
+                self.ramp_up_line = pg.InfiniteLine(pos=self.ramp_up_time, angle=90, movable=False)
+                self.ramp_down_line = pg.InfiniteLine(pos=self.total_TBS_time+self.ramp_up_time, angle=90, movable=False)
                 self.plot_waveform.addItem(self.ramp_up_line)
                 self.plot_waveform.addItem(self.ramp_down_line)
 
@@ -352,7 +378,7 @@ class MainWindow(QWidget):
         -----------
         Reset all GUI fields to default values of util.py
         """
-        self.total_iTBS_time_edit.setText(str(util.total_iTBS_time))
+        self.total_TBS_time_edit.setText(str(util.total_TBS_time))
         self.ramp_up_time_edit.setText(str(util.ramp_up_time))
         self.ramp_down_time_edit.setText(str(util.ramp_down_time))
         self.freq_of_pulse_edit.setText(str(util.freq_of_pulse))
@@ -368,7 +394,7 @@ class MainWindow(QWidget):
         -----------
         Triggers the start of the stimulation by starting worker thread
         """
-        self.worker_thread = WorkerThread(self)
+        self.worker_thread = GUI_worker.WorkerThread(self)
         self.worker_thread.start()
 
 
@@ -397,7 +423,6 @@ class MainWindow(QWidget):
                 self.worker_thread.update()
             
 
-
     def stim_selected(self):
         """
         Description
@@ -405,7 +430,9 @@ class MainWindow(QWidget):
         Updates label when stim is selected
         """
         if not self.running:
-            if self.drop_stim_select.currentText()=="iTBS" or self.drop_stim_select.currentText()=="cTBS":
+            if (self.drop_stim_select.currentText()=="iTBS" 
+                or self.drop_stim_select.currentText()=="cTBS"
+                or self.drop_stim_select.currentText() == "TBS_control"):
                 self.run_status.setText("Ready")
                 self.run_status.setStyleSheet("color: green; font-weight: bold;")
                 self.btn_create_signals.setEnabled(True)
@@ -476,7 +503,7 @@ class MainWindow(QWidget):
                     widget.setVisible(False)
 
             # recall graphing to show signals in Testing mode        
-            self.assign_values()
+            self.create_signals()
             self.graph_waveform(lines=False)
         
         # handling view toggle of ComboBox
@@ -529,13 +556,16 @@ class MainWindow(QWidget):
             elif stim_type == "cTBS":
                 self.drop_stim_select.setCurrentText("cTBS")
                 self.stim_selected()
+            elif stim_type == "TBS_control":
+                self.drop_stim_select.setCurrentText("TBS_control")
+                self.stim_selected()
             else:
                 self.run_status.setText("Stimulation type ({}) not recognised".format(stim_type))
                 self.run_status.setStyleSheet("color: red; font-weight: bold;")
                 self.btn_create_signals.setEnabled(False)
 
 
-    def save_params(self, directory=""): # CHANGE HERE: folder name (or nothing) not file name
+    def save_params(self, directory="parameter_history"):
         """
         Description
         -----------
@@ -546,24 +576,27 @@ class MainWindow(QWidget):
 
         Parameters
         ----------
-        file_name : string
-            name of the file to save data
+        directory : string
+            name of the diectory to save data (if other than paramter_history)
         """
         #only save if box is checked
         if self.box_save.checkState() == Qt.CheckState.Checked:
-            if directory == "":
-                directory = "parameter_history"
             parent_dir = os.getcwd()
             path = os.path.join(parent_dir, directory) 
 
             if not os.path.exists(path):
                 os.makedirs(path)
 
-            file_name = os.path.join(path, self.subject_edit.text()+self.session_edit.text()+".csv") 
+            file_name = os.path.join(path, 
+                                    self.subject_edit.text()+
+                                    "_"+
+                                    self.session_edit.text()+
+                                    ".csv") 
+            
             with open(file_name, 'a', newline='') as file:
                 file.write("\ntime,"+str(time.ctime(time.time())))
                 file.write("\n"+self.subject_edit.text()+','+self.session_edit.text())
-                file.write("\ntotal_time,"+str(self.total_iTBS_time))
+                file.write("\ntotal_time,"+str(self.total_TBS_time))
                 file.write("\ntrain_stim_time,"+str(self.train_stim_time))
                 file.write("\ntrain_break_time,"+str(self.train_break_time))
                 file.write("\npulse_freq,"+str(self.freq_of_pulse))
@@ -576,76 +609,6 @@ class MainWindow(QWidget):
                 file.write("\nramp_up_time,"+str(self.ramp_up_time))
                 file.write("\nramp_down_time,"+str(self.ramp_down_time))
                 file.write("\n")
-
-
-
-
-class WorkerThread(threading.Thread):
-    """
-    Description
-    -----------
-    Worker thread works in parallel to GUI to execute long code, such as running or updating tasks
-    """
-    def __init__(self, parent):
-        super().__init__()
-        self.parent = parent #access to main window's attributes/functions
-
-    def update(self):
-        """
-        Description
-        -----------
-        Run the update triggered by parent. Notably resets request values and sends new signal to DAQ
-        """
-        #reset requests
-        if self.parent.update_request == True:
-            self.parent.update_request = False
-        if self.parent.stop_request == True:
-            self.parent.stop_request = False
-            self.parent.run_status.setText("Ramping Down")
-            self.parent.run_status.setStyleSheet("color: orange; font-weight: bold;")
-        self.parent.save_params(directory=self.parent.save_edit.text())
-        self.parent.send_signal()
-
-    def run(self):
-        """
-        Description
-        -----------
-        Run and send signals to DAQ, as triggered by parent.
-        """
-        # save parameters of start of experiment to csv
-        self.parent.save_params(directory=self.parent.save_edit.text())
-
-        # change status labels for GUI
-        self.parent.run_status.setText("Stimulation Ongoing")
-        self.parent.run_status.setStyleSheet("color: red; font-weight: bold;")
-
-        # handle button enabling/disabling while running
-        self.parent.btn_update.setEnabled(True) 
-        self.parent.btn_stop.setEnabled(True)
-        self.parent.btn_create_signals.setEnabled(False) #once running, update() handles this
-
-        # task handling/settings
-        self.parent.task = nidaqmx.Task()
-        self.parent.task.ao_channels.add_ao_voltage_chan(util.device+"/ao0")
-        self.parent.task.ao_channels.add_ao_voltage_chan(util.device+"/ao1")
-        self.parent.task.timing.cfg_samp_clk_timing(rate=util.sampling_f, sample_mode=AcquisitionType.FINITE, samps_per_chan=np.shape(self.parent.TBS_signals)[1])
-
-        # write signals to DAQ
-        self.parent.send_signal()
-
-        # task closing handling
-        self.parent.task.wait_until_done(inf)
-        self.parent.task.close()
-        self.parent.running = False
-
-        # handle button enabling/disabling after run
-        self.parent.btn_update.setEnabled(False)
-        self.parent.btn_stop.setEnabled(False)
-
-        # reset status labels
-        self.parent.run_status.setText("Ready")
-        self.parent.run_status.setStyleSheet("color: green; font-weight: bold;")
-        self.parent.stim_selected() 
 
 
             
@@ -661,11 +624,41 @@ class WorkerThread(threading.Thread):
         DONE - 6c) Add ramp params to GUI, and add lines on graph after rampup and befor rampdown (for visu)
         DONE - 7) Add stop function with better functionality (update to ramp down)
         DONE - 7b) When calling update, do not want ramp up (keep ramp down, as it is needed for stim termination)
-        8) Add menu to choose stimulation type
+        DONE - 8) Add menu to choose stimulation type
         DONE - 9) Save file with all parameters used after stimulation
         DONE - 10) Add blind mode
                 ->need to add reading from excel data if exp mode.
                     ->which data are stored in excel file?
-        10b) Save start time and save params at each update
-        11) Trigger
+        DONE - NEEDS CHECKING WITH PHYSICAL DAQ - 10b) Save start time and save params at each update
+        DONE - 11) Add TBS_control signal
+        12) refactor GUI.py; its way too long
+        13) Trigger
+
+-new tasks:
+    1) Implement start trigger
+        -also needs new value field: number of simulation repetitions
+        -also needs check box: listen to trigger only if checked, otherwise stimulate as now
+        -therefore, if trigger is checked: button run stimulation calls waiting for trigger (at beginning of run()?)
+    
+    2) README
+        -Description of all files (with list of all functions (maybe annex with list of files and what they contain))
+        -where to modify things for future implementations, and how (ex: add new signal in dropdown)
+        -what to install and how
+        
+    3) Implement stop trigger
+        -if trigger, calls stop()
+
+    4) Modifications:
+        DONE -Default is exp mode
+        DONE -Remove shift in dt if rampup
+        -refactor code by creating new GUI_Vault class; MainWindow then adds values to GUI_Vault, not self
+        (-Add time stamp to save file name) (may not be ideal as creates new file each time (time will always be different to previous file, even with update durig same stim))
+        -Add padding around GUI for full screen
+        -Excel to read is coded (add to util.py), not GUI accessible
+        -Subject/Session ID is drop down from elements in excel file
+        -If blind mode, run stim without needing to press "create waveform"
+        -Add TI signal; if TI is selected, "pulse frequency" label becomes "shift frequency", and "burst frequency is disabled"
+        -Carrier frequency first in order in GUI
+        -Labels showing what A1 and A2 values are
+        
 """

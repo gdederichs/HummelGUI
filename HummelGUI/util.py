@@ -1,24 +1,30 @@
+'''
+Description
+-----------
+Deafult parameters for the main user interface
+
+Author
+------
+Gregor Dederichs, EPFL School of Life Sciences
+'''
+
 import numpy as np
 from matplotlib import pyplot as plt
 from nidaqmx.constants import AcquisitionType
 from nidaqmx.constants import WAIT_INFINITELY as inf
 
-'''
-Description
------------
-Deafult parameters for the main user interface
-'''
+
 # Defaults for GUI
-default_mode = "Blind" #in blind mode, GUI is blind (should be "Blind" or "Settings")
+default_mode = "Settings" #should be "Blind" or "Settings"
 
 # Defaults for DAQ
-device = "Dev4"
+device = "SimDev6341"
+trigger = True
 
 # Defaults for iTBS (units: seconds and Hz)
-total_iTBS_time = 20 #time of entire signal
+total_TBS_time = 20 #time of entire signal
 train_stim_time = 2 #time of stim within train
 train_break_time = 8 #break time within train
-
 carrier_f = 2000 #high frequency signals
 sampling_f = 100000 #matlab has dt = 0.01ms
 freq_of_pulse = 100 #frequency of envelope

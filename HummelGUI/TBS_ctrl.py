@@ -1,19 +1,17 @@
 """
 Description
 -----------
-Module for the creation of cTBS signals
+Module for the creation of TBS control signals
 
 Author
 ------
 Gregor Dederichs, EPFL School of Life Sciences
 """
 
-import util
 import numpy as np
+import util
 
-def cTBS(total_time = util.total_TBS_time,
-         pulse_f = util.freq_of_pulse,
-         burst_f = util.burst_freq,
+def TBS_control(total_time = util.total_TBS_time,
          carrier_f = util.carrier_f,
          A1 = util.ampli1,
          A2 = util.ampli2,
@@ -23,18 +21,12 @@ def cTBS(total_time = util.total_TBS_time,
     ''' 
     Description
     -----------
-    Create an continuous Theta Burst Stimulation (cTBS) signal
+    Create control signal (high frequency, no shift)
     
     Parameters
     ----------
     total_time : int
         the time in seconds that the stimulation lasts (excluding ramp-up and ramp-down)
-        
-    pulse_f : int
-        the frequency in Hz of the envelope (pulse)
-
-    burst_f : int
-        the frequency in Hz at which theta-bursts (3 pulses) occur 
 
     carrier_f : int
         the frequency in Hz of the individual signals (ie. high frequency)
@@ -59,44 +51,31 @@ def cTBS(total_time = util.total_TBS_time,
     tuple[np.array, np.array]
         the time points and the signals (eg. signal 1 is signals[0])
     '''
-    dt = np.linspace(0,total_time+ramp_down_time, int(util.sampling_f*(total_time+ramp_down_time)))
+    dt = np.linspace(0,total_time, int(util.sampling_f*total_time))
     # ========== RAMP UP ==========
     if rampup:
-        dt = np.linspace(0,total_time+ramp_up_time+ramp_down_time, int(util.sampling_f*(total_time+ramp_up_time+ramp_down_time)))
         signals = util.ramp(direction="up", carrier_f=carrier_f, ramp_time=ramp_up_time, A1_max=A1, A2_max=A2)
-
+    
     # ======== MAIN SIGNAL ========
-    sig = util.createTI(high_f=carrier_f,
-                  pulse_f=pulse_f,
-                  burst_f=burst_f,
-                  duration=total_time,
-                  A1=A1, A2=A2)
+    I1b = A1*np.cos(2*np.pi*carrier_f*dt)
+    I2b = A2*np.cos(2*np.pi*carrier_f*dt+np.pi)
     if rampup:
-        #concatenate to ramp
-        signals = np.concatenate((signals, sig), axis=1)
+        signals = np.concatenate((signals, np.vstack((I1b,I2b))), axis=1)
     else:
-        #if no ramp, first_sig is the beginning of the signal
-        signals = sig
+        signals = np.vstack((I1b,I2b))
 
     # ======== RAMP DOWN ========
     down = util.ramp(direction="down", carrier_f=carrier_f, ramp_time=ramp_down_time, A1_max=A1, A2_max=A2)
     signals = np.concatenate((signals,down),axis=1)
+
+    # adjust dt to include ramps
+    if rampup:
+        dt = np.linspace(0,total_time+ramp_up_time+ramp_down_time, int(util.sampling_f*(total_time+ramp_up_time+ramp_down_time)))
+    else:
+        dt = np.linspace(0,total_time+ramp_down_time, int(util.sampling_f*(total_time+ramp_down_time)))
 
     # add 100 zeros to offset spiking and update dt accordingly 
     signals = np.concatenate((signals, np.zeros((2,100))), axis=1)
     dt = np.concatenate((dt, dt[-1] + np.arange(0, 100) * dt[1]-dt[0]))
 
     return dt, signals
-
-
-"""
-a,b = cTBS()
-from matplotlib import pyplot as plt
-
-fig, axs = plt.subplots(3)
-axs[0].plot(a, b[0])
-axs[1].plot(a, b[1])
-axs[2].plot(a, b[0]+b[1])
-
-plt.show()
-"""
