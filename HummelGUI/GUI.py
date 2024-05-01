@@ -42,7 +42,7 @@ class MainWindow(QWidget):
         self.setWindowTitle('iTBS Interface')
         self.resize(800,0)
         self.layout = QGridLayout()
-
+        
         # State settings
         self.update_request = False
         self.stop_request = False
@@ -164,7 +164,7 @@ class MainWindow(QWidget):
 
         # blind mode label
         self.blind_label = QLabel("Blind Mode")
-        self.blind_label.setStyleSheet("color: white; font-weight: bold; font-size: 30pt;")
+        self.blind_label.setStyleSheet("color: white; font-weight: bold; font-size: 100pt;")
         self.blind_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.layout.addWidget(self.blind_label,7,0,5,4)
         self.blind_label.hide()
@@ -236,8 +236,17 @@ class MainWindow(QWidget):
         self.setLayout(self.layout)
         self.show()
         for widget in self.findChildren(QWidget):
-            if isinstance(widget, QLabel) and widget != self.blind_label:
+            if (isinstance(widget, QLabel) and 
+                widget != self.blind_label and
+                widget != self.select_stim_label and
+                widget != self.parameter_label and
+                widget != self.freq_label and
+                widget != self.time_label and
+                widget != self.currents_label):
                 widget.setAlignment(Qt.AlignmentFlag.AlignRight)
+            elif isinstance(widget, QLabel) and widget != self.blind_label:
+                widget.setAlignment(Qt.AlignmentFlag.AlignBottom)
+
         # choose which window to open on start
         if util.default_mode=="Blind":
             self.blind_mode.setCheckState(Qt.CheckState.Checked)
