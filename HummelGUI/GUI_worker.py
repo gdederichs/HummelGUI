@@ -35,6 +35,7 @@ class WorkerThread(threading.Thread):
             self.parent.stop_request = False
             self.parent.run_status.setText("Ramping Down")
             self.parent.run_status.setStyleSheet("color: orange; font-weight: bold;")
+            self.parent.run_status.setAlignment(Qt.AlignmentFlag.AlignLeft)
         self.parent.save_params(directory=self.parent.save_edit.text())
         self.parent.send_signal()
 
@@ -69,7 +70,7 @@ class WorkerThread(threading.Thread):
             self.parent.run_status.setStyleSheet("color: red; font-weight: bold;")
             self.parent.btn_create_signals.setEnabled(True)
         else:
-            self.parent.run_status.setText("Stimulation Coditional on Trigger: \n -'Active' LED ON: Stimulation Ongoing \n -'Active' LED OFF: Waiting for Trigger")
+            self.parent.run_status.setText("Stimulation Conditional on Trigger:\n  -'Active' LED ON: Stimulation Ongoing \n  -'Active' LED OFF: Waiting for Trigger")
             self.parent.run_status.setStyleSheet("color: blue; font-weight: bold;")
             self.parent.run_status.setAlignment(Qt.AlignmentFlag.AlignLeft)
             self.parent.btn_create_signals.setEnabled(True)
@@ -89,4 +90,5 @@ class WorkerThread(threading.Thread):
         # reset status labels
         self.parent.run_status.setText("Ready")
         self.parent.run_status.setStyleSheet("color: green; font-weight: bold;")
+        self.parent.run_status.setAlignment(Qt.AlignmentFlag.AlignRight)
         self.parent.stim_selected() 
