@@ -1,10 +1,14 @@
 import threading
+import nidaqmx.constants
 import numpy as np
 
 import nidaqmx
 from nidaqmx.constants import AcquisitionType
 from nidaqmx.constants import WAIT_INFINITELY as inf
 from nidaqmx.constants import Edge
+from nidaqmx.constants import Slope
+
+from PyQt6.QtCore import Qt
 
 import util
 
@@ -40,42 +44,35 @@ class WorkerThread(threading.Thread):
         -----------
         Run and send signals to DAQ, as triggered by parent.
         """
-        if util.trigger: #TO BE REPLACED WITH GUI CHECKBOX
-            self.parent.run_status.setText("Waiting for Trigger")
-            self.parent.run_status.setStyleSheet("color: blue; font-weight: bold;")
+        # task handling/settings
+        self.parent.task = nidaqmx.Task()
+        self.parent.task.ao_channels.add_ao_voltage_chan(util.device+"/ao0")
+        self.parent.task.ao_channels.add_ao_voltage_chan(util.device+"/ao1")
+        self.parent.task.timing.cfg_samp_clk_timing(rate=util.sampling_f,sample_mode=AcquisitionType.FINITE,samps_per_chan=np.shape(self.parent.TBS_signals)[1])
+        
+        # add trigger to writing task
+        if util.trigger:
+            self.parent.task.triggers.start_trigger.cfg_dig_edge_start_trig(trigger_source="/"+util.device+"/PFI0", trigger_edge=Edge.RISING)
+            self.parent.task.triggers.start_trigger
 
-            # trigger settings
-            print("DEBUG - settings")
-            self.parent.trigger_task = nidaqmx.Task()
-            self.parent.trigger_task.ai_channels.add_ai_voltage_chan(util.device+"/ai0")
-            self.parent.trigger_task.timing.cfg_samp_clk_timing(rate=util.sampling_f, sample_mode=AcquisitionType.FINITE, samps_per_chan=1) # ! NOT SURE ABOUT PARAMS
-            self.parent.trigger_task.triggers.start_trigger.cfg_dig_edge_start_trig(trigger_source=util.device+"/ai0", trigger_edge=Edge.RISING)
-
-            # wait for trigger
-            print("DEBUG - WAIT")
-            self.parent.trigger_task.start()
-            print("DEBUG - PASS 1")
-            self.parent.trigger_task.wait_until_done()
-            print("DEBUG - PASS 2")
-
-        print("DEBUG - outside")
         # save parameters of start of experiment to csv
         self.parent.save_params(directory=self.parent.save_edit.text())
-
-        # change status labels for GUI
-        self.parent.run_status.setText("Stimulation Ongoing")
-        self.parent.run_status.setStyleSheet("color: red; font-weight: bold;")
-
+        
         # handle button enabling/disabling while running
         self.parent.btn_update.setEnabled(True) 
         self.parent.btn_stop.setEnabled(True)
         self.parent.btn_create_signals.setEnabled(False) #once running, update() handles this
 
-        # task handling/settings
-        self.parent.task = nidaqmx.Task()
-        self.parent.task.ao_channels.add_ao_voltage_chan(util.device+"/ao0")
-        self.parent.task.ao_channels.add_ao_voltage_chan(util.device+"/ao1")
-        self.parent.task.timing.cfg_samp_clk_timing(rate=util.sampling_f, sample_mode=AcquisitionType.FINITE, samps_per_chan=np.shape(self.parent.TBS_signals)[1])
+        # handle labels
+        if not util.trigger:
+            self.parent.run_status.setText("Stimulation Ongoing")
+            self.parent.run_status.setStyleSheet("color: red; font-weight: bold;")
+            self.parent.btn_create_signals.setEnabled(True)
+        else:
+            self.parent.run_status.setText("Stimulation Coditional on Trigger: \n -'Active' LED ON: Stimulation Ongoing \n -'Active' LED OFF: Waiting for Trigger")
+            self.parent.run_status.setStyleSheet("color: blue; font-weight: bold;")
+            self.parent.run_status.setAlignment(Qt.AlignmentFlag.AlignLeft)
+            self.parent.btn_create_signals.setEnabled(True)
 
         # write signals to DAQ
         self.parent.send_signal()

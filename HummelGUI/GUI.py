@@ -51,7 +51,7 @@ class MainWindow(QWidget):
 
         # Visual settings
         self.setWindowTitle('TI Interface')
-        self.resize(800,500)
+        self.showFullScreen()
         self.layout = QGridLayout()
         
         # State settings
@@ -70,6 +70,11 @@ class MainWindow(QWidget):
         self.drop_stim_select.currentTextChanged.connect(self.stim_selected)
         self.layout.addWidget(self.drop_stim_select,1,0)
 
+        # settings mode label
+        self.settings_label = QLabel("Settings\nMode")
+        self.settings_label.setStyleSheet("color: white; font-weight: bold; font-size: 75pt;")
+        self.settings_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.layout.addWidget(self.settings_label,2,0,1,2)
 
         # ======== VALUE FIELDS ========
         # labels
@@ -166,11 +171,17 @@ class MainWindow(QWidget):
         self.btn_stop.clicked.connect(self.request_stop)
         self.layout.addWidget(self.btn_stop,13,3)
 
+        # trigger toggle
+        self.trigger_toggle = QCheckBox('Trigger')
+        self.layout.addWidget(self.trigger_toggle,14,2,alignment=Qt.AlignmentFlag.AlignRight)
+        self.trigger_toggle.stateChanged.connect(self.toggle_trigger)
+        self.trigger_toggle.setCheckState(Qt.CheckState.Checked) #by default wait for trigger
+
 
         # ======== BLIND MODE ========
         # blind mode toggle
         self.blind_mode = QCheckBox('Blind Mode')
-        self.layout.addWidget(self.blind_mode,0,2)
+        self.layout.addWidget(self.blind_mode,0,1)
         self.blind_mode.stateChanged.connect(self.toggle_mode)
 
         # blind mode label
@@ -224,8 +235,8 @@ class MainWindow(QWidget):
 
         # choose save params or not
         self.box_save = QCheckBox('Save Parameters')
-        self.layout.addWidget(self.box_save,6,1)       
-
+        self.layout.addWidget(self.box_save,3,1, alignment=Qt.AlignmentFlag.AlignBottom)       
+        
 
         # ======== GRAPH FIELDS ========
         self.dt = [0,1]
@@ -234,7 +245,7 @@ class MainWindow(QWidget):
         self.plot_waveform.getAxis("bottom").setLabel("Time", units="s")
         self.plot_waveform.getAxis("left").setLabel("Amplitude", units="mA")
         self.plot_waveform.plot(self.dt, self.TBS_signals[0]+self.TBS_signals[1])
-        self.layout.addWidget(self.plot_waveform,3,2,9,2)
+        self.layout.addWidget(self.plot_waveform,2,2,2,2)
 
 
         # ======== LABEL FIELDS ========
@@ -249,13 +260,14 @@ class MainWindow(QWidget):
         for widget in self.findChildren(QWidget):
             if (isinstance(widget, QLabel) and 
                 widget != self.blind_label and
+                widget != self.settings_label and
                 widget != self.select_stim_label and
                 widget != self.parameter_label and
                 widget != self.freq_label and
                 widget != self.time_label and
                 widget != self.currents_label):
                 widget.setAlignment(Qt.AlignmentFlag.AlignRight)
-            elif isinstance(widget, QLabel) and widget != self.blind_label:
+            elif isinstance(widget, QLabel) and widget != self.blind_label and widget != self.settings_label:
                 widget.setAlignment(Qt.AlignmentFlag.AlignBottom)
 
         # choose which window to open on start
@@ -369,7 +381,7 @@ class MainWindow(QWidget):
                 self.plot_waveform.addItem(self.ramp_up_line)
                 self.plot_waveform.addItem(self.ramp_down_line)
 
-            self.layout.addWidget(self.plot_waveform,3,2,9,2)
+            self.layout.addWidget(self.plot_waveform,2,2,2,2)
 
         
     def reset_defaults(self):
@@ -407,17 +419,22 @@ class MainWindow(QWidget):
         self.task.write(self.TBS_signals)
         self.task.start()
         self.running = True
+        
         # continuously checks for update or stop request while task is running
         while not self.task.is_task_done():
             if self.update_request:
                 # create new waveform without ramp-up
                 self.task.stop()
+                if util.trigger: #trigger disable necessary before updating task to avoid DAQ overload and spike
+                    self.task.triggers.start_trigger.disable_start_trig()
                 self.create_signals(rampup=False)
                 self.task.timing.cfg_samp_clk_timing(rate=util.sampling_f, sample_mode=AcquisitionType.FINITE, samps_per_chan=np.shape(self.TBS_signals)[1])
                 self.worker_thread.update()
             if self.stop_request:
                 # new waveform is ramp-down
                 self.task.stop()
+                if util.trigger: #trigger disable necessary before updating task to avoid DAQ overload and spike
+                    self.task.triggers.start_trigger.disable_start_trig()
                 self.create_stop_signal()
                 self.task.timing.cfg_samp_clk_timing(rate=util.sampling_f, sample_mode=AcquisitionType.FINITE, samps_per_chan=np.shape(self.TBS_signals)[1])
                 self.worker_thread.update()
@@ -467,7 +484,7 @@ class MainWindow(QWidget):
         Toggles GUI widgets between Blind mode and Testing mode
         """
         #turn on blind mode
-        if self.blind_mode.checkState() == Qt.CheckState.Checked:
+        if self.blind_mode.isChecked():
             for widget in self.findChildren(QWidget):
                 # widgets that do not change
                 if (widget != self.blind_mode and
@@ -477,7 +494,8 @@ class MainWindow(QWidget):
                     widget != self.run_status and
                     widget != self.btn_stop and 
                     widget != self.select_stim_label and
-                    widget != self.parameter_label
+                    widget != self.parameter_label and
+                    widget != self.trigger_toggle
                     ): 
                     widget.setVisible(not widget.isVisible())
                 # widgets present in blind mode only
@@ -485,7 +503,7 @@ class MainWindow(QWidget):
                     widget.setVisible(True)
 
         #back to testing mode
-        if self.blind_mode.checkState() == Qt.CheckState.Unchecked:
+        else:
             for widget in self.findChildren(QWidget):
                 # widgets that do not change
                 if (widget != self.blind_mode and
@@ -495,7 +513,8 @@ class MainWindow(QWidget):
                     widget != self.run_status and
                     widget != self.btn_stop and
                     widget != self.select_stim_label and
-                    widget != self.parameter_label
+                    widget != self.parameter_label and
+                    widget != self.trigger_toggle
                     ): 
                     widget.setVisible(not widget.isVisible())
                 # widgets present in blind mode only
@@ -510,6 +529,18 @@ class MainWindow(QWidget):
         for drops in self.drop_stim_select.findChildren(QWidget):
             drops.setVisible(True)
         self.drop_stim_select.hidePopup()
+
+    
+    def toggle_trigger(self):
+        """
+        Description
+        -----------
+        Allows to choose to use trigger or not to start stimulations
+        """
+        if self.trigger_toggle.isChecked():
+            print("debug check")
+        else:
+            print("debug uncheck")
 
 
     def read_from_data(self, file_name):
@@ -611,32 +642,18 @@ class MainWindow(QWidget):
                 file.write("\n")
 
 
+    def keyPressEvent(self, event):
+        """Exit full screen mode"""
+        if event.key() == Qt.Key.Key_Escape:
+            self.showNormal()
+
             
 
 """
--next:  DONE - 1) Rename cycle durations to train durations
-        DONE - 2) Rename cycle freq to burst freq
-        DONE - 3) Amplitudes should be defined by sum and ratio
-        DONE - 4) Default amplitudes are 2 (sum is 4)
-        DONE - 5) Add axis titles to graphing
-        DONE - 6) Add ramp ups and ramp downs (No shift in carrier freqs, Amplitude gradually increase)
-        DONE - 6b) Between trains: no shift in high stim, not simply 0
-        DONE - 6c) Add ramp params to GUI, and add lines on graph after rampup and befor rampdown (for visu)
-        DONE - 7) Add stop function with better functionality (update to ramp down)
-        DONE - 7b) When calling update, do not want ramp up (keep ramp down, as it is needed for stim termination)
-        DONE - 8) Add menu to choose stimulation type
-        DONE - 9) Save file with all parameters used after stimulation
-        DONE - 10) Add blind mode
-                ->need to add reading from excel data if exp mode.
-                    ->which data are stored in excel file?
-        DONE - NEEDS CHECKING WITH PHYSICAL DAQ - 10b) Save start time and save params at each update
-        DONE - 11) Add TBS_control signal
-        12) refactor GUI.py; its way too long
-        13) Trigger
 
 -new tasks:
     1) Implement start trigger
-        -also needs new value field: number of simulation repetitions
+        -also needs new value field: number of stimulation repetitions
         -also needs check box: listen to trigger only if checked, otherwise stimulate as now
         -therefore, if trigger is checked: button run stimulation calls waiting for trigger (at beginning of run()?)
     

@@ -18,8 +18,8 @@ from nidaqmx.constants import WAIT_INFINITELY as inf
 default_mode = "Settings" #should be "Blind" or "Settings"
 
 # Defaults for DAQ
-device = "SimDev6341"
-trigger = True
+device = "Dev4"
+trigger = True 
 
 # Defaults for iTBS (units: seconds and Hz)
 total_TBS_time = 20 #time of entire signal
