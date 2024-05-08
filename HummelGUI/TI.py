@@ -1,7 +1,7 @@
 """
 Description
 -----------
-Module for the creation of cTBS signals
+Module for the creation of TI signals
 
 Author
 ------
@@ -11,9 +11,8 @@ Gregor Dederichs, EPFL School of Life Sciences
 import util
 import numpy as np
 
-def cTBS(total_time = util.total_TBS_time,
-         pulse_f = util.freq_of_pulse,
-         burst_f = util.burst_freq,
+def TI(total_time = util.total_TBS_time,
+         shift_f = util.freq_of_pulse,
          carrier_f = util.carrier_f,
          A1 = util.ampli1,
          A2 = util.ampli2,
@@ -23,18 +22,15 @@ def cTBS(total_time = util.total_TBS_time,
     ''' 
     Description
     -----------
-    Create an continuous Theta Burst Stimulation (cTBS) signal
+    Create a continuous Temporal Intereference (TI) signal
     
     Parameters
     ----------
     total_time : int
         the time in seconds that the stimulation lasts (excluding ramp-up and ramp-down)
         
-    pulse_f : int
-        the frequency in Hz of the envelope (pulse)
-
-    burst_f : int
-        the frequency in Hz at which theta-bursts (3 pulses) occur 
+    shift_f : int
+        the frequency in Hz of the envelope (pulse) 
 
     carrier_f : int
         the frequency in Hz of the individual signals (ie. high frequency)
@@ -66,17 +62,22 @@ def cTBS(total_time = util.total_TBS_time,
         signals = util.ramp(direction="up", carrier_f=carrier_f, ramp_time=ramp_up_time, A1_max=A1, A2_max=A2)
 
     # ======== MAIN SIGNAL ========
-    sig = util.TBS(high_f=carrier_f,
-                  pulse_f=pulse_f,
-                  burst_f=burst_f,
-                  duration=total_time,
-                  A1=A1, A2=A2)
+    f1 = carrier_f
+    f2 = f1 + shift_f
+
+    main_dt = np.linspace(0,total_time,int(util.sampling_f*total_time))
+
+    main_I1 = A1*np.cos(2*np.pi*f1*main_dt)
+    main_I2 = A2*np.cos(2*np.pi*f2*main_dt+np.pi)
+
+    main_sig = np.vstack((main_I1,main_I2))
+
     if rampup:
         #concatenate to ramp
-        signals = np.concatenate((signals, sig), axis=1)
+        signals = np.concatenate((signals, main_sig), axis=1)
     else:
         #if no ramp, first_sig is the beginning of the signal
-        signals = sig
+        signals = main_sig
 
     # ======== RAMP DOWN ========
     down = util.ramp(direction="down", carrier_f=carrier_f, ramp_time=ramp_down_time, A1_max=A1, A2_max=A2)

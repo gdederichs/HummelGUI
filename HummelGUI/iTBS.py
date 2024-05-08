@@ -77,7 +77,7 @@ def iTBS(total_time = util.total_TBS_time,
         signals = util.ramp(direction="up", carrier_f=carrier_f, ramp_time=ramp_up_time, A1_max=A1, A2_max=A2)
 
     # ======== MAIN SIGNAL ========
-    first_sig = util.createTI(high_f=carrier_f,
+    first_sig = util.TBS(high_f=carrier_f,
                        pulse_f=pulse_f,
                        burst_f=burst_f,
                        duration=stim_time,
@@ -98,7 +98,7 @@ def iTBS(total_time = util.total_TBS_time,
     #remaining cycles
     for i in np.arange(no_cycles):
         #stim time
-        new = util.createTI(high_f=carrier_f,
+        new = util.TBS(high_f=carrier_f,
                        pulse_f=pulse_f,
                        burst_f=burst_f,
                        duration=stim_time,

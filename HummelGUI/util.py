@@ -7,12 +7,16 @@ Author
 ------
 Gregor Dederichs, EPFL School of Life Sciences
 '''
-
+import os
+import pandas as pd
 import numpy as np
 from matplotlib import pyplot as plt
 from nidaqmx.constants import AcquisitionType
 from nidaqmx.constants import WAIT_INFINITELY as inf
 
+# Defaults for reading EXCEL FILE
+# FILE MUST BE IN GUI DIRECTORY
+excel_file_name = "book1.xlsx" 
 
 # Defaults for GUI
 default_mode = "Settings" #should be "Blind" or "Settings"
@@ -35,13 +39,47 @@ ampli1 = A_sum/(1+A_ratio) #amplitude of signal 1
 ampli2 = A_ratio*A_sum/(1+A_ratio) #amplitude of signal 2
 ramp_up_time = 5 #in s; high freq stim with no shift (no pulse), ramping aplitude
 ramp_down_time = 5 #in s
+rep_num = 3
 
 # Defaults for saving
 save_filename = "stimulations_data.csv"
 
 
-# Base Functions
-def createTI(high_f = carrier_f,
+
+# ========== BASE FUNCTIONS ==========
+def get_subject_and_session_IDs(filename):
+    """
+     Description
+     -----------
+     Reads an excel file containing subject IDs and returns the corresponding list
+
+     Parameters
+     ----------
+     filename : str
+        name of the excel file in the same directory
+    """
+    parent_dir = os.getcwd()
+    path = os.path.join(parent_dir,"HummelGUI", filename) 
+
+    # check path
+    if not os.path.exists(path):
+        raise ValueError("File not found")
+    else: # (if path exists)
+        try:
+            df = pd.read_excel(path)
+            df = df
+        except:
+            raise ValueError("File not readable")
+        
+        subj_IDs = df["Subj"].to_list()
+        subj_IDs.insert(0,"Select Subject ID")
+        sess_IDs = df.columns.to_list()[1:]
+        sess_IDs.insert(0, "Select Session ID")
+
+        return subj_IDs,sess_IDs
+
+
+def TBS(high_f = carrier_f,
              pulse_f = freq_of_pulse,
              burst_f = burst_freq,
              duration = train_stim_time,

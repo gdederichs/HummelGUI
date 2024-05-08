@@ -21,6 +21,7 @@ class WorkerThread(threading.Thread):
     def __init__(self, parent):
         super().__init__()
         self.parent = parent #access to main window's attributes/functions
+        self.exit_repetitions = False
 
     def update(self):
         """
@@ -33,6 +34,7 @@ class WorkerThread(threading.Thread):
             self.parent.update_request = False
         if self.parent.stop_request == True:
             self.parent.stop_request = False
+            self.exit_repetitions = True
             self.parent.run_status.setText("Ramping Down")
             self.parent.run_status.setStyleSheet("color: orange; font-weight: bold;")
             self.parent.run_status.setAlignment(Qt.AlignmentFlag.AlignLeft)
@@ -43,51 +45,60 @@ class WorkerThread(threading.Thread):
         """
         Description
         -----------
-        Run and send signals to DAQ, as triggered by parent.
+        Run and send signals to DAQ, as triggered by parent. 
+        Runs the number of specified times (by parent = GUI).
+        Each run is on a new Task
         """
-        # task handling/settings
-        self.parent.task = nidaqmx.Task()
-        self.parent.task.ao_channels.add_ao_voltage_chan(util.device+"/ao0")
-        self.parent.task.ao_channels.add_ao_voltage_chan(util.device+"/ao1")
-        self.parent.task.timing.cfg_samp_clk_timing(rate=util.sampling_f,sample_mode=AcquisitionType.FINITE,samps_per_chan=np.shape(self.parent.TBS_signals)[1])
-        
-        # add trigger to writing task
-        if self.parent.use_trigger:
-            self.parent.task.triggers.start_trigger.cfg_dig_edge_start_trig(trigger_source="/"+util.device+"/PFI0", trigger_edge=Edge.RISING)
-            self.parent.task.triggers.start_trigger
+        for rep_counter in range(self.parent.rep_num):
 
-        # save parameters of start of experiment to csv
-        self.parent.save_params(directory=self.parent.save_edit.text())
-        
-        # handle button enabling/disabling while running
-        self.parent.btn_update.setEnabled(True) 
-        self.parent.btn_stop.setEnabled(True)
-        self.parent.btn_create_signals.setEnabled(False) #once running, update() handles this
+            # task handling/settings
+            self.parent.task = nidaqmx.Task()
+            self.parent.task.ao_channels.add_ao_voltage_chan(util.device+"/ao0")
+            self.parent.task.ao_channels.add_ao_voltage_chan(util.device+"/ao1")
+            self.parent.task.timing.cfg_samp_clk_timing(rate=util.sampling_f,sample_mode=AcquisitionType.FINITE,samps_per_chan=np.shape(self.parent.TBS_signals)[1])
+            
+            # add trigger to writing task
+            if self.parent.use_trigger:
+                self.parent.task.triggers.start_trigger.cfg_dig_edge_start_trig(trigger_source="/"+util.device+"/PFI0", trigger_edge=Edge.RISING)
+                self.parent.task.triggers.start_trigger
 
-        # handle labels
-        if not self.parent.use_trigger:
-            self.parent.run_status.setText("Stimulation Ongoing")
-            self.parent.run_status.setStyleSheet("color: red; font-weight: bold;")
-            self.parent.btn_create_signals.setEnabled(True)
-        else:
-            self.parent.run_status.setText("Stimulation Conditional on Trigger:\n  -'Active' LED ON: Stimulation Ongoing \n  -'Active' LED OFF: Waiting for Trigger")
-            self.parent.run_status.setStyleSheet("color: blue; font-weight: bold;")
-            self.parent.run_status.setAlignment(Qt.AlignmentFlag.AlignLeft)
-            self.parent.btn_create_signals.setEnabled(True)
+            # save parameters of start of experiment to csv
+            self.parent.save_params(directory=self.parent.save_edit.text())
+            
+            # handle button enabling/disabling while running
+            self.parent.btn_update.setEnabled(True) 
+            self.parent.btn_stop.setEnabled(True)
+            self.parent.btn_create_signals.setEnabled(False) #once running, update() handles this
 
-        # write signals to DAQ
-        self.parent.send_signal()
+            # handle labels
+            if not self.parent.use_trigger:
+                self.parent.run_status.setText("Stimulation {} Ongoing".format(rep_counter))
+                self.parent.run_status.setStyleSheet("color: red; font-weight: bold;")
+                self.parent.btn_create_signals.setEnabled(True)
+            else:
+                self.parent.run_status.setText("Stimulation {} Conditional on Trigger:\n  -'Active' LED ON: Stimulation Ongoing \n  -'Active' LED OFF: Waiting for Trigger".format(rep_counter))
+                self.parent.run_status.setStyleSheet("color: blue; font-weight: bold;")
+                self.parent.run_status.setAlignment(Qt.AlignmentFlag.AlignLeft)
+                self.parent.btn_create_signals.setEnabled(True)
 
-        # task closing handling
-        self.parent.task.wait_until_done(inf)
-        self.parent.task.close()
-        self.parent.running = False
+            # write signals to DAQ
+            self.parent.send_signal()
 
-        # handle button enabling/disabling after run
-        self.parent.btn_update.setEnabled(False)
-        self.parent.btn_stop.setEnabled(False)
+            # task closing handling
+            self.parent.task.wait_until_done(inf)
+            self.parent.task.close()
+
+            # handle button enabling/disabling after run
+            self.parent.btn_update.setEnabled(False)
+            self.parent.btn_stop.setEnabled(False)
+
+            # triggered by parent's stop request
+            if self.exit_repetitions:
+                self.exit_repetitions = False
+                break
 
         # reset status labels
+        self.parent.running = False
         self.parent.run_status.setText("Ready")
         self.parent.run_status.setStyleSheet("color: green; font-weight: bold;")
         self.parent.run_status.setAlignment(Qt.AlignmentFlag.AlignRight)
