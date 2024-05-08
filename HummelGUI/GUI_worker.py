@@ -51,7 +51,7 @@ class WorkerThread(threading.Thread):
         self.parent.task.timing.cfg_samp_clk_timing(rate=util.sampling_f,sample_mode=AcquisitionType.FINITE,samps_per_chan=np.shape(self.parent.TBS_signals)[1])
         
         # add trigger to writing task
-        if util.trigger:
+        if self.parent.use_trigger:
             self.parent.task.triggers.start_trigger.cfg_dig_edge_start_trig(trigger_source="/"+util.device+"/PFI0", trigger_edge=Edge.RISING)
             self.parent.task.triggers.start_trigger
 
@@ -64,7 +64,7 @@ class WorkerThread(threading.Thread):
         self.parent.btn_create_signals.setEnabled(False) #once running, update() handles this
 
         # handle labels
-        if not util.trigger:
+        if not self.parent.use_trigger:
             self.parent.run_status.setText("Stimulation Ongoing")
             self.parent.run_status.setStyleSheet("color: red; font-weight: bold;")
             self.parent.btn_create_signals.setEnabled(True)

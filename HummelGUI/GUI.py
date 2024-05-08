@@ -51,6 +51,7 @@ class MainWindow(QWidget):
 
         # Visual settings
         self.setWindowTitle('TI Interface')
+        self.resize(800,500)
         self.showFullScreen()
         self.layout = QGridLayout()
         
@@ -236,7 +237,7 @@ class MainWindow(QWidget):
         # choose save params or not
         self.box_save = QCheckBox('Save Parameters')
         self.layout.addWidget(self.box_save,3,1, alignment=Qt.AlignmentFlag.AlignBottom)       
-        
+
 
         # ======== GRAPH FIELDS ========
         self.dt = [0,1]
@@ -425,7 +426,7 @@ class MainWindow(QWidget):
             if self.update_request:
                 # create new waveform without ramp-up
                 self.task.stop()
-                if util.trigger: #trigger disable necessary before updating task to avoid DAQ overload and spike
+                if self.use_trigger: #trigger disable necessary before updating task to avoid DAQ overload and spike
                     self.task.triggers.start_trigger.disable_start_trig()
                 self.create_signals(rampup=False)
                 self.task.timing.cfg_samp_clk_timing(rate=util.sampling_f, sample_mode=AcquisitionType.FINITE, samps_per_chan=np.shape(self.TBS_signals)[1])
@@ -433,7 +434,7 @@ class MainWindow(QWidget):
             if self.stop_request:
                 # new waveform is ramp-down
                 self.task.stop()
-                if util.trigger: #trigger disable necessary before updating task to avoid DAQ overload and spike
+                if self.use_trigger: #trigger disable necessary before updating task to avoid DAQ overload and spike
                     self.task.triggers.start_trigger.disable_start_trig()
                 self.create_stop_signal()
                 self.task.timing.cfg_samp_clk_timing(rate=util.sampling_f, sample_mode=AcquisitionType.FINITE, samps_per_chan=np.shape(self.TBS_signals)[1])
@@ -538,9 +539,9 @@ class MainWindow(QWidget):
         Allows to choose to use trigger or not to start stimulations
         """
         if self.trigger_toggle.isChecked():
-            print("debug check")
+            self.use_trigger = True
         else:
-            print("debug uncheck")
+            self.use_trigger = False
 
 
     def read_from_data(self, file_name):
