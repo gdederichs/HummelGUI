@@ -10,6 +10,7 @@ Gregor Dederichs, EPFL School of Life Sciences
 
 import numpy as np
 import util
+import fbase
 
 def TBS_control(total_time = util.total_TBS_time,
          carrier_f = util.carrier_f,
@@ -54,7 +55,7 @@ def TBS_control(total_time = util.total_TBS_time,
     dt = np.linspace(0,total_time, int(util.sampling_f*total_time))
     # ========== RAMP UP ==========
     if rampup:
-        signals = util.ramp(direction="up", carrier_f=carrier_f, ramp_time=ramp_up_time, A1_max=A1, A2_max=A2)
+        signals = fbase.ramp(direction="up", carrier_f=carrier_f, ramp_time=ramp_up_time, A1_max=A1, A2_max=A2)
     
     # ======== MAIN SIGNAL ========
     I1b = A1*np.cos(2*np.pi*carrier_f*dt)
@@ -65,7 +66,7 @@ def TBS_control(total_time = util.total_TBS_time,
         signals = np.vstack((I1b,I2b))
 
     # ======== RAMP DOWN ========
-    down = util.ramp(direction="down", carrier_f=carrier_f, ramp_time=ramp_down_time, A1_max=A1, A2_max=A2)
+    down = fbase.ramp(direction="down", carrier_f=carrier_f, ramp_time=ramp_down_time, A1_max=A1, A2_max=A2)
     signals = np.concatenate((signals,down),axis=1)
 
     # adjust dt to include ramps

@@ -26,6 +26,7 @@ import numpy as np
 import pandas as pd
 
 import util
+import fbase
 import iTBS
 import cTBS
 import TBS_ctrl
@@ -221,7 +222,7 @@ class MainWindow(QWidget):
         self.btn_session.hide()
 
         # read available subjects and sessions
-        self.subj, self.sess = util.get_subject_and_session_IDs(util.excel_file_name)
+        self.subj, self.sess = fbase.get_subject_and_session_IDs(util.excel_file_name)
 
         # subject 
         self.subject_edit = QComboBox()
@@ -427,7 +428,7 @@ class MainWindow(QWidget):
         #named TBS_signals for code usability, 
         #but is simply high f signals,
         #with decreasing amplitude and null envelope
-        self.TBS_signals = util.ramp(direction="down",
+        self.TBS_signals = fbase.ramp(direction="down",
                                  carrier_f=self.carrier_f,
                                  ramp_time=self.ramp_down_time,
                                  A1_max=self.A1,

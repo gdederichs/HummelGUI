@@ -10,6 +10,7 @@ Gregor Dederichs, EPFL School of Life Sciences
 
 import numpy as np
 import util
+import fbase
 
 def iTBS(total_time = util.total_TBS_time,
          stim_time = util.train_stim_time,
@@ -74,10 +75,10 @@ def iTBS(total_time = util.total_TBS_time,
     # ========== RAMP UP ==========
     if rampup:
         dt = np.linspace(0,total_time+ramp_up_time+ramp_down_time, int(util.sampling_f*(total_time+ramp_up_time+ramp_down_time)))
-        signals = util.ramp(direction="up", carrier_f=carrier_f, ramp_time=ramp_up_time, A1_max=A1, A2_max=A2)
+        signals = fbase.ramp(direction="up", carrier_f=carrier_f, ramp_time=ramp_up_time, A1_max=A1, A2_max=A2)
 
     # ======== MAIN SIGNAL ========
-    first_sig = util.TBS(high_f=carrier_f,
+    first_sig = fbase.TBS(high_f=carrier_f,
                        pulse_f=pulse_f,
                        burst_f=burst_f,
                        duration=stim_time,
@@ -98,7 +99,7 @@ def iTBS(total_time = util.total_TBS_time,
     #remaining cycles
     for i in np.arange(no_cycles):
         #stim time
-        new = util.TBS(high_f=carrier_f,
+        new = fbase.TBS(high_f=carrier_f,
                        pulse_f=pulse_f,
                        burst_f=burst_f,
                        duration=stim_time,
@@ -123,7 +124,7 @@ def iTBS(total_time = util.total_TBS_time,
                 signals = np.concatenate((signals, np.vstack((I1b,I2b))), axis=1)
                 
     # ========= RAMP DOWN =========
-    down = util.ramp(direction="down", carrier_f=carrier_f, ramp_time=ramp_down_time, A1_max=A1, A2_max=A2)
+    down = fbase.ramp(direction="down", carrier_f=carrier_f, ramp_time=ramp_down_time, A1_max=A1, A2_max=A2)
     signals = np.concatenate((signals, down), axis=1)
     # add 100 zeros to offset spiking and update dt accordingly 
     signals = np.concatenate((signals, np.zeros((2,100))), axis=1)

@@ -9,6 +9,7 @@ Gregor Dederichs, EPFL School of Life Sciences
 """
 
 import util
+import fbase
 import numpy as np
 
 def cTBS(total_time = util.total_TBS_time,
@@ -63,10 +64,10 @@ def cTBS(total_time = util.total_TBS_time,
     # ========== RAMP UP ==========
     if rampup:
         dt = np.linspace(0,total_time+ramp_up_time+ramp_down_time, int(util.sampling_f*(total_time+ramp_up_time+ramp_down_time)))
-        signals = util.ramp(direction="up", carrier_f=carrier_f, ramp_time=ramp_up_time, A1_max=A1, A2_max=A2)
+        signals = fbase.ramp(direction="up", carrier_f=carrier_f, ramp_time=ramp_up_time, A1_max=A1, A2_max=A2)
 
     # ======== MAIN SIGNAL ========
-    sig = util.TBS(high_f=carrier_f,
+    sig = fbase.TBS(high_f=carrier_f,
                   pulse_f=pulse_f,
                   burst_f=burst_f,
                   duration=total_time,
@@ -79,7 +80,7 @@ def cTBS(total_time = util.total_TBS_time,
         signals = sig
 
     # ======== RAMP DOWN ========
-    down = util.ramp(direction="down", carrier_f=carrier_f, ramp_time=ramp_down_time, A1_max=A1, A2_max=A2)
+    down = fbase.ramp(direction="down", carrier_f=carrier_f, ramp_time=ramp_down_time, A1_max=A1, A2_max=A2)
     signals = np.concatenate((signals,down),axis=1)
 
     # add 100 zeros to offset spiking and update dt accordingly 
