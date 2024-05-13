@@ -148,7 +148,12 @@ if self.drop_stim_select.currentText() == "iTBS":
 All other lines of code can be modified in a similar manner (9 total locations to implement).
 
 ### GUI.py
-[GUI.py](HummelGUI/GUI.py) is the file supporting the entire graphical user interface for TBS. This includes storing values and waveforms, setting  up the geometry of the interface, and implementing all widgets of the GUI. This file can be modified to add new stimulation types as described above, but also to add widgets. Again, searching for widgets already encoded with Ctrl+F can be helpful if a new implementation is necessary. Widgets are added in a grid-like manner with the position (0,0) being the upper left corner of the GUI.
+[GUI.py](HummelGUI/GUI.py) is the file supporting the entire graphical user interface for TBS. This includes storing values and waveforms, setting  up the geometry of the interface, and implementing all widgets of the GUI. This is generally the file that will be most modified to add new stimulation types as described above, but also to add widgets, such as buttons, dropdown menus, value fields, and so on. Again, searching for widgets already coded with Ctrl+F can be helpful if a new implementation is necessary.
 
 ### GUI_worker.py
-[GUI_worker.py](HummelGUI/Gui_worker.py) is the file which runs the stimulation and communicates with the DAQ. It is started by the GUI, but then runs in parallel (threaded) to avoid freezing the GUI while the stimulations are running. This allows to access the different functionalities such as the Update or Stop buttons, in particular.
+[GUI_worker.py](HummelGUI/Gui_worker.py) is the file which runs the stimulation and communicates with the DAQ. It is started by the GUI, but then runs in parallel (threaded) to avoid freezing the GUI while the stimulations are running. This allows to access the different functionalities such as the Update or Stop buttons, in particular. In this file, technical functionalities can be implemented, such as triggers for the DAQ. These technical functionalities are generally related to a "Task", which is the nidaqmx object that can be sent to the DAQ.
+___
+## Author
+This Graphical User Interface was written by Gregor Dederichs, EPFL School of Life Sciences. (2024) 
+
+Thank you for trusting this GUI and have fun stimulating!
