@@ -114,4 +114,41 @@ To link the present GUI to the DAQ and [stimulators](https://www.digitimer.com/p
 ![pinout](demo/pinout.png)
 
 In addition to the labels proposed by the GUI, it is important to check the status of the physcial DAQ through the informative LEDs. In particular, when connected to a computer, the DAQ becomes "Ready" (one LED); when sending data through to the stimulators, the DAQ becomes "Active" (two LEDs). To ensure proper function, the correct DAQ device name must be set in [util.py](HummelGUI/util.py). This device name can be found through the [NI-MAX](https://knowledge.ni.com/KnowledgeArticleDetails?id=kA03q000000YGQwCAO&l=en-CH) software, if the automatic pop-up window does not open when connecting the computer to the DAQ.
+__
+## File Descriptions and Modifying the GUI
+The Gui has been written in order to facilitate adding functionalities and components, to accomodate the best possible to future studies. This section describes important files in detail to guide the experimenter in modifying the code for new functionalities.
 
+### main.py
+[main.py](HummelGUI/main.py) runs the applications, showing the Graphical User Interface. This file is not meant to be modified.
+
+### util.py
+[util.py](HummelGUI/util.py) is a file which simply stores all default values for the GUI. If new default values are needed, simply add a new line to the file. Refer to this new value in other files as *util.new_name*, making sure the [util.py](HummelGUI/util.py) file is imported (*import util*).
+
+### fbase.py
+[fbase.py](HummelGUI/fbase.py) is a file housing basic functions which are used to build other, more complex signals. Adding a function here is only necessary if a new basic functionality is created. To do so, define a new function (using the other functions as a template may be useful) in the file. Refer to this new function in other files as *fbase.new_function_name*, making sure the [fbase.py](HummelGUI/fbase.py) file is imported (*import fbase*). Generally speaking, this file would only be modified in rare cases.
+
+### iTBS.py, cTBS.py, TBS_control.py, TI.py
+[iTBS.py](HummelGUI/iTBS.py), [cTBS.py](HummelGUI/cTBS.py), [TBS_control.py](HummelGUI/TBS_control.py) and [TI.py](HummelGUI/TI.py) are files containing a single function each. These functions create the signals corresponding to each stimulation type. To create a new stimulation type, create a new file in the [HummelGUI](HummelGUI/) directory with the name of the stimulation. In this file, define the signal as a function, using the other files as a template. In particular, it is good practice to use the name of the file as the name of the function. Refer to this new function in other files as function_name.function_name, assuming the good practice above was followed, and the file is imported (*import function_name*). 
+
+To insert the new stimulation type in the GUI, multiple lines of code need to be modified and added. To locate all lines of code to be modified added, search for all lines of code that contain previously implemented stimulations with Ctrl+F. These lines can appear in [GUI.py](HummelGUI/GUI.py). For example, when searching for "iTBS", one sees that the *create_signals* function is to be modified. Thereafer, base all modifications on the existig code. For example, in *create_signals*, a new line must be added for the new signal as follows, replacing "iTBS" by the new function:
+```
+# signal for iTBS
+if self.drop_stim_select.currentText() == "iTBS":
+    self.dt, self.TBS_signals = iTBS.iTBS(self.total_TBS_time,
+                                self.train_stim_time,
+                                self.train_break_time,
+                                self.freq_of_pulse,
+                                self.burst_freq,
+                                self.carrier_f,
+                                self.A1, self.A2,
+                                self.ramp_up_time,
+                                self.ramp_down_time,
+                                rampup=rampup)
+```
+All other lines of code can be modified in a similar manner (9 total locations to implement).
+
+### GUI.py
+[GUI.py](HummelGUI/GUI.py) is the file supporting the entire graphical user interface for TBS. This includes storing values and waveforms, setting  up the geometry of the interface, and implementing all widgets of the GUI. This file can be modified to add new stimulation types as described above, but also to add widgets. Again, searching for widgets already encoded with Ctrl+F can be helpful if a new implementation is necessary. Widgets are added in a grid-like manner with the position (0,0) being the upper left corner of the GUI.
+
+### GUI_worker.py
+[GUI_worker.py](HummelGUI/Gui_worker.py) is the file which runs the stimulation and communicates with the DAQ. It is started by the GUI, but then runs in parallel (threaded) to avoid freezing the GUI while the stimulations are running. This allows to access the different functionalities such as the Update or Stop buttons, in particular.
