@@ -737,35 +737,3 @@ class MainWindow(QWidget):
         aa1 = summ/(1+ratioo)
         aa2 = ratioo*aa1
         self.a_label.setText('A1 = {:.3f} [mA]; A2 = {:.3f} [mA]'.format(aa1, aa2))
-
-            
-
-"""
-
--new tasks:
-    DONE - 1) Implement start trigger
-        DONE -also needs new value field: number of stimulation repetitions
-        DONE -also needs check box: listen to trigger only if checked, otherwise stimulate as now
-    
-    2) README
-        -Description of all files (with list of all functions (maybe annex with list of files and what they contain))
-        -where to modify things for future implementations, and how (ex: add new signal in dropdown)
-        -what to install and how
-        
-    3) Implement stop trigger
-        -if trigger, calls stop()
-
-    4) Modifications:
-        DONE -Default is exp mode
-        DONE -Remove shift in dt if rampup
-        NOT NECESSARY -refactor code by creating new GUI_Vault class; MainWindow then adds values to GUI_Vault, not self
-        (-Add time stamp to save file name) (may not be ideal as creates new file each time (time will always be different to previous file, even with update durig same stim))
-        NOT NECESSARY -Add padding around GUI for full screen
-        DONE -Excel to read is coded (add to util.py), not GUI accessible
-        DONE -Subject/Session ID is drop down from elements in excel file
-        DONE -If blind mode, run stim without needing to press "create waveform"
-        DONE -Add TI signal; if TI is selected, "pulse frequency" label becomes "shift frequency", and "burst frequency" is disabled
-        DONE -Carrier frequency first in order in GUI
-        DONE -Labels showing what A1 and A2 values are
-        
-"""
