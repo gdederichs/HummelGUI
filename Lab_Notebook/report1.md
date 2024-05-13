@@ -28,5 +28,7 @@ Secondly, timing options of python will be tested on the new DAQs, to test if th
 
 Thirdly, a simple GUI (start, stop and trigger) will be written from scratch in MATLAB, to test if the issue observed in the current GUI when using a trigger still occurs. If so, the hypothesis of the problem being at the level of data handling by the DAQ would become very convincing. If not, the problem is at the level of data handling by the MATLAB code (perhaps not clearing all running tasks).
 
+## Update on 13.05.2024
+All implementatios above were tried and tested, yielding a functional GUI written in Python, notably with the nidaqmx package. Please refer to [readme](../README.md) for further details.
 
 
