@@ -79,7 +79,8 @@ To link the present GUI to the DAQ and [stimulators](https://www.digitimer.com/p
 - BNC cable 1 (red): from the **AI0** channel of the DAQ to the input channel of the first stimulator
 - BNC cable 2 (red): from the **AI1** channel of the DAQ to the input channel of the second stimulator
 - BNC cable 3 (blue): from the **PFI0** channel of the DAQ to trigger port of the task computer
-[pinout](demo/pinout.png)
+
+![pinout](demo/pinout.png)
 
 In addition to the labels proposed by the GUI, it is important to check the status of the physcial DAQ through the informative LEDs. In particular, when connected to a computer, the DAQ becomes "Ready" (one LED); when sending data through to the stimulators, the DAQ becomes "Active" (two LEDs). To ensure proper function, the correct DAQ device name must be set in [util.py](HummelGUI/util.py). This device name can be found through the [NI-MAX](https://knowledge.ni.com/KnowledgeArticleDetails?id=kA03q000000YGQwCAO&l=en-CH) software, if the automatic pop-up window does not open when connecting the computer to the DAQ.
 ___
