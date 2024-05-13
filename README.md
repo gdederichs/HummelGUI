@@ -1,6 +1,35 @@
 # HummelGUI
 The Graphical User Interface (GUI) proposed here controls a data aquisition system (DAQ) that can be used control electrodes for non-invasive brain stimulation. This repository contains the code for the GUI, as well as utility files, notably for defaults values. The following sections explain the GUI's dependencies and compatibility with DAQs, as well as its functionalities and features.
 ___
+## Quick Guide
+All necessary details are covered in depth in further sections. Here is a quick guide to using the GUI.
+- Install dependancies
+- Setup DAQ
+  - BNC 1: "AI0" to stimulator 1
+  - BNC 2: "AI1" to stimulator 2
+  - BNC 3: "PFI0" to trigger port
+  - USB: DAQ to computer running GUI
+  - Enable stimulators
+- Check/Set defaults in [util.py](HummelGUI/util.py), especially:
+  - Stimulation parameters
+  - Excel file name
+  - Device (DAQ) name
+- Run main.py
+  - Select mode
+  - In "Settings Mode":
+    - Select Stimulation    
+    - Configure Parameters
+    - Create Waveform
+    - Check/Uncheck Trigger
+    - Run Stimulation
+    - Update and Stop stimulation if needed
+  - In "Blind Mode":
+    - Select Subject and Session   
+    - Get Stimulation from file
+    - Check/Uncheck parameter saving
+    - Run Stimulation
+    - Update and Stop stimulation if needed
+___
 ## GUI Functionalities
 The GUI proposed here offers two seperate modes: "Settings Mode" and "Blind Mode". These appear as follows.
 ![clean_set](demo/settings_clean.png)
@@ -52,7 +81,7 @@ To link the present GUI to the DAQ and [stimulators](https://www.digitimer.com/p
 - BNC cable 3 (blue): from the **PFI0** channel of the DAQ to trigger port of the task computer
 [pinout](demo/pinout.png)
 
-In addition to the labels proposed by the GUI, it is important to check the status of the physcial DAQ through the informative LEDs. In particular, when connected to a computer, the DAQ becomes "Ready" (one LED); when sending data through to the stimulators, the DAQ becomes "Active" (two LEDs).
+In addition to the labels proposed by the GUI, it is important to check the status of the physcial DAQ through the informative LEDs. In particular, when connected to a computer, the DAQ becomes "Ready" (one LED); when sending data through to the stimulators, the DAQ becomes "Active" (two LEDs). To ensure proper function, the correct DAQ device name must be set in [util.py](HummelGUI/util.py). This device name can be found through the [NI-MAX](https://knowledge.ni.com/KnowledgeArticleDetails?id=kA03q000000YGQwCAO&l=en-CH) software, if the automatic pop-up window does not open when connecting the computer to the DAQ.
 ___
 ## Launching the GUI
 coming soon...
