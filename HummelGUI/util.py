@@ -23,7 +23,6 @@ default_mode = "Settings" #should be "Blind" or "Settings"
 
 # Defaults for DAQ
 device = "Dev4"
-trigger = True 
 
 # Defaults for iTBS (units: seconds and Hz)
 total_TBS_time = 20 #time of entire signal
@@ -41,8 +40,7 @@ ramp_up_time = 5 #in s; high freq stim with no shift (no pulse), ramping aplitud
 ramp_down_time = 5 #in s
 rep_num = 3
 
-# Defaults for saving
-save_filename = "stimulations_data.csv"
+
 
 
 
