@@ -75,7 +75,7 @@ The "Settings Mode" is available to manually select a stimulation type, adjust p
 
 ![settings_mode](demo/settings_mode.png)
 
-In this mode, one first selects the base stimulation type from the corresponding dropdown menu (A). Currently available stimulations include iTBS, cTBS, TBS control and TI. As a note, how to add new stimulation types is explained further down.
+In this mode, the experimenter first selects the base stimulation type from the corresponding dropdown menu (A). Currently available stimulations include iTBS, cTBS, TBS control and TI. As a note, how to add new stimulation types is explained further down.
 
 Once the stimulation type is selected, the default parameters defined in [util.py](HummelGUI/util.py) can be modified directly through the GUI (B). The parameters that may be modified include duration parameters such as total duration of the stimulation, ramp-up and ramp-down time, frequency parameters such as carrier, pulse and burst frequencies, and current parameters such as the sum and ratio of currents. Default parameters can be reset thanks to the corresponding button.
 
@@ -90,7 +90,7 @@ The "Blind Mode" is available to carry out experiments on participants for a stu
 
 ![blind_mode](demo/blind_mode.png)
 
-Instead, the experimenter can first select the subject and session's ID from dropdown menus (A). Here only IDs that exist can be selected, depending on the data of the predefined excel file. From this same data, the stimulation type is chosen according to the IDs, and the parameters are read from default values. These default values, as well as the filename of the excel file, can be set prior to the study in [util.py](HummelGUI/util.py).
+Instead, the experimenter can first select the subject and session's ID from dropdown menus (A). Here, only IDs that exist can be selected, depending on the data of the predefined excel file. From this same data, the stimulation type is chosen according to the IDs, and the parameters are read from default values. These default values, as well as the filename of the excel file, can be set prior to the study in [util.py](HummelGUI/util.py).
 
 Once chosen, the experimenter uses the corresponding button to load the stimulation. The label (D) will then provide information on the status of the GUI. If all is in order, the GUI will be "Ready". Otherwise, the label will indicate to the experimenter if an issue is detected. This issue may be unselected IDs, a non-existing file or an unknown stimulation type defined in the excel file.
 
@@ -98,7 +98,7 @@ Before running the stimulation, the experimenter can choose to save or not the p
 
 Once set, the experimenter can run the stimulation as in the "Settings Mode", also with update, stop and trigger functions available (E). 
 
-To toggle between these two modes, the experimenter must check or uncheck the "Blind Mode" chcekbox (C).
+To toggle between these two modes, the experimenter must check or uncheck the "Blind Mode" checkbox (C).
 ___
 ## Defaults
 All defaults can be set in [util.py](HummelGUI/util.py). This includes the default opening to "Blind Mode" or "Settings Mode", all default parameters for stimulations, the DAQ device name and the excel file name storing stimulations for specific IDs. Most important defauts are located at the head of the [util.py](HummelGUI/util.py) file.
@@ -116,7 +116,7 @@ To link the present GUI to the DAQ and [stimulators](https://www.digitimer.com/p
 In addition to the labels proposed by the GUI, it is important to check the status of the physcial DAQ through the informative LEDs. In particular, when connected to a computer, the DAQ becomes "Ready" (one LED); when sending data through to the stimulators, the DAQ becomes "Active" (two LEDs). To ensure proper function, the correct DAQ device name must be set in [util.py](HummelGUI/util.py). This device name can be found through the [NI-MAX](https://knowledge.ni.com/KnowledgeArticleDetails?id=kA03q000000YGQwCAO&l=en-CH) software, if the automatic pop-up window does not open when connecting the computer to the DAQ.
 ___
 ## File Descriptions and Modifying the GUI
-The Gui has been written in order to facilitate adding functionalities and components, to accomodate the best possible to future studies. This section describes important files in detail to guide the experimenter in modifying the code for new functionalities.
+The GUI has been written in order to facilitate adding functionalities and components, to accomodate the best possible to future studies. This section describes important files in detail to guide the experimenter in modifying the code for new functionalities.
 
 ___
 ### main.py
@@ -148,6 +148,10 @@ if self.drop_stim_select.currentText() == "iTBS":
                                 self.ramp_up_time,
                                 self.ramp_down_time,
                                 rampup=rampup)
+
+# ==> signal for NEW FUNCTION <==
+if self.drop_stim_select.currentText() == "new_function":
+    self.dt, self.TBS_signals = new_function.new_function(...)
 ```
 All other lines of code can be modified in a similar manner (9 total locations to implement).
 
