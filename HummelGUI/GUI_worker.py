@@ -72,7 +72,7 @@ class WorkerThread(threading.Thread):
 
             # handle labels
             if not self.parent.use_trigger:
-                self.parent.run_status.setText("Stimulation {} Ongoing".format(rep_counter))
+                self.parent.run_status.setText("Stimulation {} Ongoing".format(rep_counter+1))
                 self.parent.run_status.setStyleSheet("color: red; font-weight: bold;")
                 self.parent.btn_create_signals.setEnabled(True)
             else:

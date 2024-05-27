@@ -1,9 +1,6 @@
 # directories
 parameter_history/
 
-# excel files
-*.xlsx
-
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
