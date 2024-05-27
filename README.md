@@ -5,8 +5,8 @@ ___
 All necessary details are covered in depth in further sections. Here is a quick guide to using the GUI.
 - Install dependancies
 - Setup DAQ
-  - BNC 1: "AI0" to stimulator 1
-  - BNC 2: "AI1" to stimulator 2
+  - BNC 1: "AO0" to stimulator 1
+  - BNC 2: "AO1" to stimulator 2
   - BNC 3: "PFI0" to trigger port
   - USB: DAQ to computer running GUI
   - Enable stimulators
@@ -107,8 +107,8 @@ ___
 This GUI has been built for, and is intended to be used with National Instruments' [USB-6341 DAQ](https://www.ni.com/docs/en-US/bundle/usb-6341-specs/page/specs.html). The GUI might be compatible with others, but not all. In particular, certain features are **not compatible** with the [USB-6216](https://www.ni.com/docs/en-US/bundle/usb-6216-specs/page/specs.html).
 
 To link the present GUI to the DAQ and [stimulators](https://www.digitimer.com/product/human-neurophysiology/peripheral-stimulators/ds5-isolated-bipolar-constant-current-stimulator/), the experimenter must first connect the computer running the GUI to the DAQ via a USB cable. Thereafter, two BNC cables run from the DAQ to either stimulator, and one runs to the computer running the tasks of the study (not the GUI computer) (see also the image below): 
-- BNC cable 1 (red): from the **AI0** channel of the DAQ to the input channel of the first stimulator
-- BNC cable 2 (red): from the **AI1** channel of the DAQ to the input channel of the second stimulator
+- BNC cable 1 (red): from the **AO0** channel of the DAQ to the input channel of the first stimulator
+- BNC cable 2 (red): from the **AO1** channel of the DAQ to the input channel of the second stimulator
 - BNC cable 3 (blue): from the **PFI0** channel of the DAQ to trigger port of the task computer
 
 ![pinout](demo/pinout.png)
