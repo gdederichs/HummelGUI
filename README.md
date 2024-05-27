@@ -46,6 +46,7 @@ The GUI is written in Python and depends on multiple Python packages. The follow
    - [nidaqmx](https://pypi.org/project/nidaqmx/) - ```pip install nidaqmx```
    - [pandas](https://pandas.pydata.org/docs/getting_started/install.html) - ```pip install pandas```
    - [matplotlib](https://pypi.org/project/matplotlib/) - ```pip install matplotlib```
+   - [openpyxl](https://openpyxl.readthedocs.io/en/stable/) - ```pip install openpyxl```
 ___
 ## Launching the GUI
 It is highly recommended to use a code editor such as [Visual Studio](https://code.visualstudio.com/) to interact with the GUI. This is especially true to edit code and default values, but is very helpful for ease of use to launch the GUI. This is done as follows in [Visual Studio](https://code.visualstudio.com/), assuming previous steps were followed.
