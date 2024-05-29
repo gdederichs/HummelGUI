@@ -38,7 +38,8 @@ The GUI is written in Python and depends on multiple Python packages. The follow
 2. [Install Anaconda](https://docs.anaconda.com/free/anaconda/install/) - Highly Recommended (for better Python environment control)
 3. [Install NI-MAX](https://knowledge.ni.com/KnowledgeArticleDetails?id=kA03q000000YGQwCAO&l=en-CH) - Optional (for testing DAQ, and testing code on virtual DAQs)
 4. Install a code editor, such as [Visual Studio](https://code.visualstudio.com/) - Highly Recommended (for editing, running scripts, etc...)
-5. Install packages - Necessary
+5. [Install NI-DAQmx driver](https://www.ni.com/en/support/downloads/drivers/download.ni-daq-mx.html#532710) - Necessary
+6. Install packages - Necessary
    - Recommended to install with pip, through the terminal
    - [numpy](https://numpy.org/install/) - ```pip install numpy```
    - [PyQt6](https://pypi.org/project/PyQt6/) - ```pip install PyQt6```
